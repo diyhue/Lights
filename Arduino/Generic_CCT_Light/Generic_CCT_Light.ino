@@ -11,15 +11,16 @@
 #include <WiFiManager.h>
 #include <EEPROM.h>
 
+#define light_name "Hue CCT Light" // Light name, change this if you se multiple lights for easy identification
 
-#define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true. 
+#define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true.
 //For GPIO based on/off and brightness control, it is mandatory to connect the following GPIO pins to ground using 10k resistor
 #define button1_pin 1 // on and brightness up
 #define button2_pin 3 // off and brightness down
 
 //define pins
 #define PWM_CHANNELS 2
-uint8_t pins[PWM_CHANNELS] = {5, 4};
+uint8_t pins[PWM_CHANNELS] = {13, 14};
 
 //#define USE_STATIC_IP //! uncomment to enable Static IP Adress
 #ifdef USE_STATIC_IP
@@ -28,20 +29,22 @@ IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
 IPAddress subnet_mask(255, 255, 255,   0);
 #endif
 
-uint8_t cct[2], scene;
+uint8_t colors[PWM_CHANNELS], bri, sat, color_mode, scene;
 bool light_state, in_transition;
-int transitiontime, ct, bri;
-float step_level[2], current_cct[2];
+int ct;
+float step_level[PWM_CHANNELS], current_colors[PWM_CHANNELS];
 byte mac[6];
 
 ESP8266WebServer server(80);
 
 void convert_ct() {
 
+  int optimal_bri = int( 10 + bri / 1.04);
+
   uint8 percent_warm = ((ct - 150) * 100) / 350;
 
-  cct[0] = (bri * percent_warm) / 100;
-  cct[1] =  (bri * (100 - percent_warm)) / 100;
+  colors[0] = (optimal_bri * percent_warm) / 100;
+  colors[1] =  (optimal_bri * (100 - percent_warm)) / 100;
 
 }
 
@@ -83,9 +86,9 @@ void process_lightdata(float transitiontime) {
   transitiontime *= 16;
   for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
     if (light_state) {
-      step_level[color] = (cct[color] - current_cct[color]) / transitiontime;
+      step_level[color] = (colors[color] - current_colors[color]) / transitiontime;
     } else {
-      step_level[color] = current_cct[color] / transitiontime;
+      step_level[color] = current_colors[color] / transitiontime;
     }
   }
 }
@@ -93,22 +96,18 @@ void process_lightdata(float transitiontime) {
 void lightEngine() {
   for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
     if (light_state) {
-      if (cct[color] != current_cct[color] ) {
+      if (colors[color] != current_colors[color] ) {
         in_transition = true;
-        current_cct[color] += step_level[color];
-        if ((step_level[color] > 0.0f && current_cct[color] > cct[color]) || (step_level[color] < 0.0f && current_cct[color] < cct[color])){
-          current_cct[color] = cct[color];
-        }
-        analogWrite(pins[color], (int)(current_cct[color]));
+        current_colors[color] += step_level[color];
+        if ((step_level[color] > 0.0f && current_colors[color] > colors[color]) || (step_level[color] < 0.0f && current_colors[color] < colors[color])) current_colors[color] = colors[color];
+        analogWrite(pins[color], (int)(current_colors[color] * 4.0));
       }
     } else {
-      if (current_cct[color] != 0) {
+      if (current_colors[color] != 0) {
         in_transition = true;
-        current_cct[color] -= step_level[color];
-        if (current_cct[color] < 0.0f) {
-          current_cct[color] = 0;
-        }
-        analogWrite(pins[color], (int)(current_cct[color]));
+        current_colors[color] -= step_level[color];
+        if (current_colors[color] < 0.0f) current_colors[color] = 0;
+        analogWrite(pins[color], (int)(current_colors[color] * 4.0));
       }
     }
   }
@@ -161,16 +160,18 @@ void lightEngine() {
 void setup() {
   EEPROM.begin(512);
 
-  analogWriteFreq(1000);
-  analogWriteRange(255);
-  
+  for (uint8_t pin = 0; pin < PWM_CHANNELS; pin++) {
+    pinMode(pins[pin], OUTPUT);
+    analogWrite(pins[pin], 0);
+  }
+
 #ifdef USE_STATIC_IP
   WiFi.config(strip_ip, gateway_ip, subnet_mask);
 #endif
 
 
   apply_scene(EEPROM.read(2));
-  step_level[0] = cct[0] / 150.0; step_level[1] = cct[1] / 150.0;
+  step_level[0] = colors[0] / 150.0; step_level[1] = colors[1] / 150.0;
 
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
     light_state = true;
@@ -178,8 +179,11 @@ void setup() {
       lightEngine();
     }
   }
+
   WiFiManager wifiManager;
-  wifiManager.autoConnect("New Hue Light");
+  wifiManager.setConfigPortalTimeout(120);
+  wifiManager.autoConnect(light_name);
+
   if (! light_state)  {
     // Show that we are connected
     analogWrite(pins[1], 100);
@@ -245,9 +249,9 @@ void setup() {
     }
     for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
       if (light_state) {
-        step_level[color] = (cct[color] - current_cct[color]) / 54;
+        step_level[color] = (colors[color] - current_colors[color]) / 54;
       } else {
-        step_level[color] = current_cct[color] / 54;
+        step_level[color] = current_colors[color] / 54;
       }
     }
   });
@@ -287,9 +291,9 @@ void setup() {
       }
       else if (server.argName(i) == "alert" && server.arg(i) == "select") {
         if (light_state) {
-          current_cct[0] = 0; current_cct[1] = 0;
+          current_colors[0] = 0; current_colors[1] = 0;
         } else {
-          current_cct[0] = 255; current_cct[1] = 255;
+          current_colors[0] = 255; current_colors[1] = 255;
         }
       }
       else if (server.argName(i) == "transitiontime") {
@@ -354,16 +358,16 @@ void setup() {
       EEPROM.commit();
     } else if (server.hasArg("alert")) {
       if (light_state) {
-        current_cct[0] = 0; current_cct[1] = 0;
+        current_colors[0] = 0; current_colors[1] = 0;
       } else {
-        current_cct[3] = 255;
+        current_colors[3] = 255;
       }
     }
     for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
       if (light_state) {
-        step_level[color] = ((float)cct[color] - current_cct[color]) / transitiontime;
+        step_level[color] = ((float)colors[color] - current_colors[color]) / transitiontime;
       } else {
-        step_level[color] = current_cct[color] / transitiontime;
+        step_level[color] = current_colors[color] / transitiontime;
       }
     }
     if (server.hasArg("reset")) {
