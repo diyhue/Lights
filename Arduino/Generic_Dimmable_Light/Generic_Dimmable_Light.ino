@@ -76,7 +76,7 @@ void lightEngine() {
         if ((step_level[i] > 0.0 && current_bri[i] > bri[i]) || (step_level[i] < 0.0 && current_bri[i] < bri[i])) {
           current_bri[i] = bri[i];
         }
-        analogWrite(i, (int)(current_bri[i]));
+        analogWrite(pins[i], (int)(current_bri[i] * 4));
       }
     } else {
       if (current_bri[i] != 0 ) {
@@ -85,7 +85,7 @@ void lightEngine() {
         if (current_bri[i] < 0) {
           current_bri[i] = 0;
         }
-        analogWrite(i, (int)(current_bri[i]));
+        analogWrite(pins[i], (int)(current_bri[i] * 4));
       }
     }
   }
@@ -145,9 +145,6 @@ void setup() {
 #ifdef USE_STATIC_IP
   WiFi.config(strip_ip, gateway_ip, subnet_mask);
 #endif
-
-  analogWriteFreq(1000);
-  analogWriteRange(255);
 
   for (uint8_t light = 0; light < LIGHTS_COUNT; light++) {
     apply_scene(EEPROM.read(2), light);
