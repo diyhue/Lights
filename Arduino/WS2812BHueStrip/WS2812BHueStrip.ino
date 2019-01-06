@@ -7,10 +7,11 @@
 #include <WiFiManager.h>
 #include <EEPROM.h>
 
-#define light_name "WS2812 Hue Strip" //default light name
+#define light_name "Hue rgb strip" //default light name
 #define lightsCount 3
-#define pixelCount 60
+#define pixelCount 36
 #define transitionLeds 6 // must be even number
+#define entertainmentTimeout 1500 // millis
 
 #define button1_pin 4 // on and bri up
 #define button2_pin 5 // off and bri down
@@ -24,12 +25,13 @@ IPAddress subnet_mask(255, 255, 255,   0);
 #endif
 
 int lightLedsCount = pixelCount / lightsCount;
-uint8_t rgb[lightsCount][3], bri[lightsCount], sat[lightsCount], color_mode[lightsCount], scene;
-bool light_state[lightsCount], in_transition, entertainment_run;
-int ct[lightsCount], hue[lightsCount];
-float step_level[lightsCount][3], current_rgb[lightsCount][3], x[lightsCount], y[lightsCount];
+uint8_t rgb[lightsCount][3], _rgb[lightsCount][3], bri[lightsCount], _bri[lightsCount], sat[lightsCount], _sat[lightsCount], color_mode[lightsCount], _color_mode[lightsCount], scene;
+bool light_state[lightsCount], _light_state[lightsCount], in_transition, entertainment_run;
+int ct[lightsCount], _ct[lightsCount], hue[lightsCount], _hue[lightsCount];
+float step_level[lightsCount][3], current_rgb[lightsCount][3], _current_rgb[lightsCount][3], x[lightsCount], _x[lightsCount], y[lightsCount], _y[lightsCount];
 byte mac[6];
 byte packetBuffer[64];
+long lastEPMillis;
 
 ESP8266WebServer server(80);
 WiFiUDP Udp;
@@ -393,6 +395,40 @@ void lightEngine() {
   }
 }
 
+void cache() {
+  for (int light = 0; light < lightsCount; light++) {
+    _light_state[light] = light_state[light];
+    for (int component = 0; component < 3; component++) {
+      _rgb[light][component] = rgb[light][component];
+      _current_rgb[light][component] = current_rgb[light][component];
+    }
+    _color_mode[light] = color_mode[light];
+    _x[light] = x[light];
+    _y[light] = y[light];
+    _bri[light] = bri[light];
+    _ct[light] = ct[light];
+    _sat[light] = sat[light];
+    _hue[light] = hue[light];
+  }
+}
+
+void restore() {
+  for (int light = 0; light < lightsCount; light++) {
+    light_state[light] = _light_state[light];
+    for (int component = 0; component < 3; component++) {
+      current_rgb[light][component] = rgb[light][component];
+      rgb[light][component] = _rgb[light][component];
+    }
+    color_mode[light] = _color_mode[light];
+    x[light] = _x[light];
+    y[light] = _y[light];
+    bri[light] = _bri[light];
+    ct[light] = _ct[light];
+    sat[light] = _sat[light];
+    hue[light] = _hue[light];
+    process_lightdata(light, 4);
+  }
+}
 
 void setup() {
   strip.Begin();
@@ -421,6 +457,8 @@ void setup() {
     }
   }
 
+  cache();
+
   WiFiManager wifiManager;
   wifiManager.setConfigPortalTimeout(120);
   wifiManager.autoConnect(light_name);
@@ -443,7 +481,7 @@ void setup() {
   // ArduinoOTA.setPort(8266);
 
   // Hostname defaults to esp8266-[ChipID]
-  // ArduinoOTA.setHostname("myesp8266");
+  // ArduinoOTA.setHostname("hue-rgb-strip");
 
   // No authentication by default
   // ArduinoOTA.setPassword((const char *)"123");
@@ -457,7 +495,6 @@ void setup() {
   pinMode(button2_pin, INPUT);
 
   server.on("/set", []() {
-    entertainment_run = false;
     uint8_t light;
     float transitiontime = 4;
     for (uint8_t i = 0; i < server.args(); i++) {
@@ -531,7 +568,8 @@ void setup() {
       }
     }
     server.send(200, "text/plain", "OK, x: " + (String)x[light] + ", y:" + (String)y[light] + ", bri:" + (String)bri[light] + ", ct:" + ct[light] + ", colormode:" + color_mode[light] + ", state:" + light_state[light]);
-    process_lightdata(light, transitiontime);
+    if (!entertainment_run) process_lightdata(light, transitiontime);
+    cache();
   });
 
   server.on("/get", []() {
@@ -626,6 +664,7 @@ void setup() {
       ESP.reset();
     }
 
+    cache();
 
     String http_content = "<!doctype html>";
     http_content += "<html>";
@@ -729,9 +768,10 @@ RgbColor blendingEntert(uint8_t left[3], uint8_t right[3], uint8_t pixel) {
 void entertainment() {
   uint8_t packetSize = Udp.parsePacket();
   if (packetSize) {
-    if (! entertainment_run) {
+    if (!entertainment_run) {
       entertainment_run = true;
     }
+    lastEPMillis = millis();
     Udp.read(packetBuffer, packetSize);
     for (uint8_t i = 0; i < packetSize / 4; i++) {
       rgb[packetBuffer[i * 4]][0] = packetBuffer[i * 4 + 1];
@@ -773,8 +813,13 @@ void entertainment() {
 void loop() {
   ArduinoOTA.handle();
   server.handleClient();
-  if (! entertainment_run) {
+  if (!entertainment_run) {
     lightEngine();
+  } else {
+    if ((millis() - lastEPMillis) >= entertainmentTimeout) {
+      entertainment_run = false;
+      restore();
+    }
   }
   entertainment();
 }
