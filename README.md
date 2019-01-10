@@ -10,4 +10,4 @@ Steps to Follow:
 - Configure Microcontroller by connecting to its Wifi, adding Credentials for Wifi Network.
 - Add new created diyHue Lamp within APP by searching for new Devices.
 
-For More Information view [WIKI](https://github.com/diyhue/diyHue/wiki/DIY-Lights)
+For More Information is available in our [documentation](https://diyhue.readthedocs.io/en/latest/lights/diylights.html))!
