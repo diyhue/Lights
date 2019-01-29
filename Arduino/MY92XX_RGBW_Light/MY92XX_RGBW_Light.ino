@@ -108,23 +108,15 @@ void convert_xy()
   float g = -X * 0.9689f + Y * 1.8758f + Z * 0.0415f;
   float b =  X * 0.0557f - Y * 0.2040f + Z * 1.0570f;
 
-  if (r > b && r > g && r > 1.0f) {
-    // red is too big
-    g = g / r;
-    b = b / r;
-    r = 1.0f;
-  }
-  else if (g > b && g > r && g > 1.0f) {
-    // green is too big
-    r = r / g;
-    b = b / g;
-    g = 1.0f;
-  }
-  else if (b > r && b > g && b > 1.0f) {
-    // blue is too big
-    r = r / b;
-    g = g / b;
-    b = 1.0f;
+  float maxv = 0;// calc the maximum value of r g and b
+  if (r > maxv) maxv = r;
+  if (g > maxv) maxv = g;
+  if (b > maxv) maxv = b;
+
+  if (maxv > 0) {// only if maximum value is greater than zero, otherwise there would be division by zero
+    r /= maxv;   // scale to maximum so the brightest light is always 1.0
+    g /= maxv;
+    b /= maxv;
   }
 
   // Apply gamma correction
