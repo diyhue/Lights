@@ -119,29 +119,15 @@ void convert_xy(uint8_t light)
   g = g <= 0.04045f ? g / 12.92f : pow((g + 0.055f) / (1.0f + 0.055f), 2.4f);
   b = b <= 0.04045f ? b / 12.92f : pow((b + 0.055f) / (1.0f + 0.055f), 2.4f);
 
-  if (r > b && r > g) {
-    // red is biggest
-    if (r > 1.0f) {
-      g = g / r;
-      b = b / r;
-      r = 1.0f;
-    }
-  }
-  else if (g > b && g > r) {
-    // green is biggest
-    if (g > 1.0f) {
-      r = r / g;
-      b = b / g;
-      g = 1.0f;
-    }
-  }
-  else if (b > r && b > g) {
-    // blue is biggest
-    if (b > 1.0f) {
-      r = r / b;
-      g = g / b;
-      b = 1.0f;
-    }
+  float maxv = 0;// calc the maximum value of r g and b
+  if (r > maxv) maxv = r;
+  if (g > maxv) maxv = g;
+  if (b > maxv) maxv = b;
+
+  if (maxv > 0) {// only if maximum value is greater than zero, otherwise there would be division by zero
+    r /= maxv;   // scale to maximum so the brightest light is always 1.0
+    g /= maxv;
+    b /= maxv;
   }
 
   r = r < 0 ? 0 : r;
