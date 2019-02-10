@@ -163,9 +163,9 @@ void setup() {
   wifiManager.autoConnect("New Hue Light");
   if (! light_state[0])  {
     // Show that we are connected
-    analogWrite(pins[1], 100);
+    analogWrite(pins[0], 100);
     delay(500);
-    analogWrite(pins[1], 0);
+    analogWrite(pins[0], 0);
   }
 
   WiFi.macAddress(mac);
