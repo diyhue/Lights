@@ -765,7 +765,7 @@ void setup() {
     JsonObject& root = newBuffer.createObject();
     root["name"] = lightName;
     root["lights"] = lightsCount;
-    root["protocol"] = "native_single";
+    root["protocol"] = "native_multi";
     root["modelid"] = "LST002";
     root["type"] = "ws2812_strip";
     root["mac"] = String(macString);
