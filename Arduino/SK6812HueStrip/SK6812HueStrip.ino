@@ -568,7 +568,7 @@ void ChangeNeoPixels(uint16_t newCount)
   if (strip != NULL) {
     delete strip; // delete the previous dynamically created strip
   }
-  strip = new NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod>(newCount); // and recreate with new count
+  strip = new NeoPixelBus<NeoGrbwFeature, Neo800KbpsMethod>(newCount); // and recreate with new count
   strip->Begin();
 }
 
