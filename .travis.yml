@@ -19,9 +19,8 @@ env:
     - SKETCH="Generic_RGB_Light"
     - SKETCH="Generic_CCT_Light"
     - SKETCH="Generic_RGB_CCT_Light"
-    
-    # Not in catalog.json
-    #- SKETCH="WS2812BHueStrip"
+    - SKETCH="Generic_WS2812_Strip"
+    - SKETCH="Generic_SK6812_Strip"
     
     # No update for version 2.0
     #- SKETCH="Generic_Dimmable_Light"
@@ -29,7 +28,6 @@ env:
     #- SKETCH="Generic_ON_OFF_device_433Mhz"
     #- SKETCH="EspLight-fridgefire"
     #- SKETCH="MY92XX_RGBW_Light"
-    #- SKETCH="SK6812HueStrip"
     #- SKETCH="Sonoff_S20"
     #- SKETCH="WS2811_adjustable"
     #- SKETCH="WS2812BHueRing"
