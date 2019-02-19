@@ -1,0 +1,60 @@
+language: c
+sudo: false
+
+cache:
+  directories:
+    - ~/arduino_cli
+    - ~/.arduino15/packages/
+
+git:
+  depth: false
+  quiet: true
+
+env:
+  global:
+     - ARDUINO_CLI_VERSION="0.3.4-alpha.preview"
+     - COMMIT=${TRAVIS_COMMIT::8}
+  matrix:
+    - SKETCH="Generic_RGBW_Light"
+    - SKETCH="Generic_RGB_Light"
+    - SKETCH="Generic_CCT_Light"
+    - SKETCH="Generic_RGB_CCT_Light"
+    
+    # Not in catalog.json
+    #- SKETCH="WS2812BHueStrip"
+    
+    # No update for version 2.0
+    #- SKETCH="Generic_Dimmable_Light"
+    #- SKETCH="Generic_ON_OFF_device"
+    #- SKETCH="Generic_ON_OFF_device_433Mhz"
+    #- SKETCH="EspLight-fridgefire"
+    #- SKETCH="MY92XX_RGBW_Light"
+    #- SKETCH="SK6812HueStrip"
+    #- SKETCH="Sonoff_S20"
+    #- SKETCH="WS2811_adjustable"
+    #- SKETCH="WS2812BHueRing"
+    #- SKETCH="sk6812_wwa"
+    
+    # Compile error
+    #- SKETCH="fastLED_SM16726_RGBW_Bulb"
+    #- SKETCH="P9813_ledstrip_chainable"
+
+install:
+  - bash ${TRAVIS_BUILD_DIR}/install.sh
+  - export PATH="$HOME/arduino_cli:$PATH"
+
+script:
+  # Compile the sketch for NodeMCU board
+  - arduino-cli compile --fqbn esp8266:esp8266:nodemcu ${TRAVIS_BUILD_DIR}/Arduino/$SKETCH/$SKETCH.ino --output ${TRAVIS_BUILD_DIR}/Arduino/bin/$SKETCH.bin
+
+# Push build files to repo
+after_success:
+- >
+  if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+    cd ${TRAVIS_BUILD_DIR}
+    git checkout master
+    git add *
+    git commit --message "Build $SKETCH #${COMMIT} [skip travis]"
+    git remote add origin-travis https://${GH_TOKEN}@github.com/cheesemarathon/Lights.git
+    git push origin-travis master
+  fi
