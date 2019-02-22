@@ -53,6 +53,6 @@ after_success:
     git checkout master
     git add *
     git commit --message "Build $SKETCH #${COMMIT} [skip travis]"
-    git remote add origin-travis https://${GH_TOKEN}@github.com/cheesemarathon/Lights.git
+    git remote add origin-travis https://${GH_TOKEN}@github.com/diyhue/Lights.git
     git push origin-travis master
   fi
