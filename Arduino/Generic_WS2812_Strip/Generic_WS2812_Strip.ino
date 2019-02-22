@@ -404,13 +404,6 @@ void lightEngine() {
   }
 }
 
-void cache() {
-}
-
-void restore() {
-
-}
-
 void saveState() {
   DynamicJsonBuffer jsonBuffer;
   JsonObject& json = jsonBuffer.createObject();
@@ -898,7 +891,9 @@ void loop() {
   } else {
     if ((millis() - lastEPMillis) >= entertainmentTimeout) {
       entertainmentRun = false;
-      restore();
+      for (uint8_t i = 0; i < lightsCount; i++) {
+        processLightdata(i, 4); //return to original colors with 0.4 sec transition
+      }
     }
   }
   entertainment();
