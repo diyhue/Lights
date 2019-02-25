@@ -50,6 +50,7 @@ after_success:
 - >
   if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
     cd ${TRAVIS_BUILD_DIR}
+    git pull
     git checkout master
     git add *
     git commit --message "Build $SKETCH #${COMMIT} [skip travis]"
