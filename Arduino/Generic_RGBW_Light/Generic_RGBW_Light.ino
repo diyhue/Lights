@@ -18,6 +18,7 @@ IPAddress address ( 192,  168,   0,  95); // choose an unique IP Adress
 IPAddress gateway ( 192,  168,   0,   1); // Router IP
 IPAddress submask (255, 255, 255,   0);
 
+#define light_version 2.01
 #define PWM_CHANNELS 4
 
 struct state {
@@ -659,7 +660,7 @@ void setup() {
     root["modelid"] = "LCT015";
     root["type"] = "rgbw";
     root["mac"] = String(macString);
-    root["version"] = 2.0;
+    root["version"] = light_version;
     String output;
     root.printTo(output);
     server.send(200, "text/plain", output);
