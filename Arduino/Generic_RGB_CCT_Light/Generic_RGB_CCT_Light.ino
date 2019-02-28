@@ -26,9 +26,12 @@ struct state {
 
 //core
 
+#define entertainmentTimeout 1500 // millis
+
 state light;
-bool inTransition, useDhcp = true;
+bool inTransition, entertainmentRun, useDhcp = true;
 byte mac[6], packetBuffer[8];
+unsigned long lastEPMillis;
 
 //settings
 char *lightName = "New Hue RGB-CCT light";
@@ -469,9 +472,9 @@ void setup() {
   }
   WiFiManager wifiManager;
 
-   if (!useDhcp) {
+  if (!useDhcp) {
     wifiManager.setSTAStaticIPConfig(address, gateway, submask);
-  } 
+  }
 
   if (!wifiManager.autoConnect(lightName)) {
     delay(3000);
@@ -661,7 +664,7 @@ void setup() {
       delay(100);
       ESP.reset();
     }
-    
+
   });
 
   server.on("/reset", []() {
@@ -678,15 +681,31 @@ void setup() {
 void entertainment() {
   int packetSize = Udp.parsePacket();
   if (packetSize) {
+    analogWrite(pins[3], 0);
+    analogWrite(pins[4], 0);
+    light.currentColors[3] = 0;
+    light.currentColors[4] = 0;
+    if (!entertainmentRun) {
+      entertainmentRun = true;
+    }
+    lastEPMillis = millis();
     Udp.read(packetBuffer, packetSize);
     for (uint8_t color = 0; color < 3; color++) {
-      analogWrite(pins[color - 1], (int)(packetBuffer[color] * 4));
+      light.currentColors[color] = packetBuffer[color + 1];
+      analogWrite(pins[color], (int)(packetBuffer[color + 1] * 4));
     }
   }
 }
 
 void loop() {
   server.handleClient();
-  lightEngine();
+  if (!entertainmentRun) {
+    lightEngine();
+  } else {
+    if ((millis() - lastEPMillis) >= entertainmentTimeout) {
+      entertainmentRun = false;
+      processLightdata(4);
+    }
+  }
   entertainment();
 }

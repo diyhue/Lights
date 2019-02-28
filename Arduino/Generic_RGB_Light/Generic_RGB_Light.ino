@@ -13,6 +13,7 @@ IPAddress address ( 192,  168,   0,  95); // choose an unique IP Adress
 IPAddress gateway ( 192,  168,   0,   1); // Router IP
 IPAddress submask (255, 255, 255,   0);
 
+#define light_version 2.01
 #define PWM_CHANNELS 3
 
 struct state {
@@ -24,9 +25,12 @@ struct state {
 
 //core
 
+#define entertainmentTimeout 1500 // millis
+
 state light;
-bool inTransition, useDhcp = true;
+bool inTransition, entertainmentRun, useDhcp = true;
 byte mac[6], packetBuffer[8];
+unsigned long lastEPMillis;
 
 //settings
 char *lightName = "New Hue RGB light";
@@ -615,7 +619,7 @@ void setup() {
     root["modelid"] = "LCT015";
     root["type"] = "rgb";
     root["mac"] = String(macString);
-    root["version"] = 2.0;
+    root["version"] = light_version;
     String output;
     root.printTo(output);
     server.send(200, "text/plain", output);
@@ -686,15 +690,27 @@ void setup() {
 void entertainment() {
   int packetSize = Udp.parsePacket();
   if (packetSize) {
+    if (!entertainmentRun) {
+      entertainmentRun = true;
+    }
+    lastEPMillis = millis();
     Udp.read(packetBuffer, packetSize);
     for (uint8_t color = 0; color < 3; color++) {
-      analogWrite(pins[color - 1], (int)(packetBuffer[color] * 4));
+      light.currentColors[color] = packetBuffer[color + 1];
+      analogWrite(pins[color], (int)(packetBuffer[color + 1] * 4));
     }
   }
 }
 
 void loop() {
   server.handleClient();
-  lightEngine();
+  if (!entertainmentRun) {
+    lightEngine();
+  } else {
+    if ((millis() - lastEPMillis) >= entertainmentTimeout) {
+      entertainmentRun = false;
+      processLightdata(4);
+    }
+  }
   entertainment();
 }
