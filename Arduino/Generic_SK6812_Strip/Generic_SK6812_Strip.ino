@@ -870,7 +870,7 @@ void entertainment() {
           }
         }
       } else {
-        strip->ClearTo(RgbwColor(lights[0].colors[0], lights[0].colors[1], lights[0].colors[2]), 0, lightLedsCount - 1);
+        strip->ClearTo(RgbwColor(lights[0].colors[0], lights[0].colors[1], lights[0].colors[2], 0), 0, lightLedsCount - 1);
       }
     }
     strip->Show();
