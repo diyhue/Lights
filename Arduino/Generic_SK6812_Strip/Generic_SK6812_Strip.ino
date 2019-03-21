@@ -28,7 +28,7 @@ struct state {
 state lights[10];
 bool inTransition, entertainmentRun, useDhcp = true;
 byte mac[6], packetBuffer[46];
-long lastEPMillis;
+unsigned long lastEPMillis;
 
 //settings
 char *lightName = "Hue SK6812 strip";
@@ -55,7 +55,7 @@ NeoPixelBus<NeoGrbwFeature, Neo800KbpsMethod>* strip = NULL;
 void convertHue(uint8_t light)
 {
   lights[light].colors[3] = 0;
-  
+
   double      hh, p, q, t, ff, s, v;
   long        i;
 
@@ -117,7 +117,7 @@ void convertHue(uint8_t light)
 void convertXy(uint8_t light)
 {
   lights[light].colors[3] = 0;
-  
+
   int optimal_bri = lights[light].bri;
   if (optimal_bri < 5) {
     optimal_bri = 5;
@@ -395,13 +395,6 @@ void lightEngine() {
       }
     }
   }
-}
-
-void cache() {
-}
-
-void restore() {
-
 }
 
 void saveState() {
@@ -890,7 +883,9 @@ void loop() {
   } else {
     if ((millis() - lastEPMillis) >= entertainmentTimeout) {
       entertainmentRun = false;
-      restore();
+      for (uint8_t i = 0; i < lightsCount; i++) {
+        processLightdata(i, 4);
+      }
     }
   }
   entertainment();
