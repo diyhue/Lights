@@ -1,5 +1,5 @@
 /*
-  This can control bulbs with 5 pwm channels (red, gree, blue, warm white and could wihite). Is tested with MiLight colors bulb.
+  This can control bulbs with 4 pwm channels (red, gree, blue, warm white and could wihite). Is tested with MiLight colors bulb.
 */
 #include <FS.h>
 #include <ESP8266WiFi.h>
@@ -12,12 +12,13 @@
 
 // Define your white led color temp here (Range 2000-6536K).
 // For warm-white led try 2000K, for cold-white try 6000K
-#define WHITE_TEMP 2000 // kelvin
+#define WHITE_TEMP 4500 // kelvin
 
 IPAddress address ( 192,  168,   0,  95); // choose an unique IP Adress
 IPAddress gateway ( 192,  168,   0,   1); // Router IP
 IPAddress submask (255, 255, 255,   0);
 
+#define light_version 2.01
 #define PWM_CHANNELS 4
 
 struct state {
@@ -29,9 +30,12 @@ struct state {
 
 //core
 
+#define entertainmentTimeout 1500 // millis
+
 state light;
-bool inTransition, useDhcp = true;
+bool inTransition, entertainmentRun, useDhcp = true;
 byte mac[6], packetBuffer[8];
+unsigned long lastEPMillis;
 
 //settings
 char *lightName = "New Hue RGBW light";
@@ -656,7 +660,7 @@ void setup() {
     root["modelid"] = "LCT015";
     root["type"] = "rgbw";
     root["mac"] = String(macString);
-    root["version"] = 2.0;
+    root["version"] = light_version;
     String output;
     root.printTo(output);
     server.send(200, "text/plain", output);
@@ -729,15 +733,29 @@ void setup() {
 void entertainment() {
   int packetSize = Udp.parsePacket();
   if (packetSize) {
+    analogWrite(pins[3], 0);
+    light.currentColors[3] = 0;
+    if (!entertainmentRun) {
+      entertainmentRun = true;
+    }
+    lastEPMillis = millis();
     Udp.read(packetBuffer, packetSize);
     for (uint8_t color = 0; color < 3; color++) {
-      analogWrite(pins[color - 1], (int)(packetBuffer[color] * 4));
+      light.currentColors[color] = packetBuffer[color + 1];
+      analogWrite(pins[color], (int)(packetBuffer[color + 1] * 4));
     }
   }
 }
 
 void loop() {
   server.handleClient();
-  lightEngine();
+  if (!entertainmentRun) {
+    lightEngine();
+  } else {
+    if ((millis() - lastEPMillis) >= entertainmentTimeout) {
+      entertainmentRun = false;
+      processLightdata(4);
+    }
+  }
   entertainment();
 }

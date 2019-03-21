@@ -26,7 +26,7 @@ struct state {
 state lights[10];
 bool inTransition, entertainmentRun, useDhcp = true;
 byte mac[6], packetBuffer[46];
-long lastEPMillis;
+unsigned long lastEPMillis;
 
 //settings
 char *lightName = "Hue rgb strip";

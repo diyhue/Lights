@@ -54,5 +54,6 @@ after_success:
     git add *
     git commit --message "Build $SKETCH #${COMMIT} [skip travis]"
     git remote add origin-travis https://${GH_TOKEN}@github.com/diyhue/Lights.git
+    git pull origin-travis master
     git push origin-travis master
   fi
