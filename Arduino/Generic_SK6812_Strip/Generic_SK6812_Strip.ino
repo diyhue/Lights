@@ -852,9 +852,10 @@ void entertainment() {
       lights[packetBuffer[i * 4]].currentColors[0] = packetBuffer[i * 4 + 1];
       lights[packetBuffer[i * 4]].currentColors[1] = packetBuffer[i * 4 + 2];
       lights[packetBuffer[i * 4]].currentColors[2] = packetBuffer[i * 4 + 3];
+      lights[packetBuffer[i * 4]].currentColors[3] = 0; // disable white led
     }
     for (uint8_t light = 0; light < lightsCount; light++) {
-      if (lightsCount > 1) {
+      if (lightsCount >= 1) { //allow processing with one light
         if (light == 0) {
           for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds / 2; pixel++) {
             if (pixel < lightLedsCount - transitionLeds / 2) {
@@ -876,9 +877,7 @@ void entertainment() {
             }
           }
         }
-      } else {
-        strip->ClearTo(RgbwColor(lights[0].colors[0], lights[0].colors[1], lights[0].colors[2]), 0, lightLedsCount - 1);
-      }
+      } 
     }
     strip->Show();
   }
