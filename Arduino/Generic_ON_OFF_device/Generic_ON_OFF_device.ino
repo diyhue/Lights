@@ -8,6 +8,8 @@
 
 #define devicesCount 4
 
+#define light_name "On-OFF Hue Light"  //default light name
+
 uint8_t devicesPins[devicesCount] = {12, 13, 14, 5};
 
 
@@ -59,7 +61,8 @@ void setup() {
   }
 
   WiFiManager wifiManager;
-  wifiManager.autoConnect("New Hue Device");
+  wifiManager.setConfigPortalTimeout(120);
+  wifiManager.autoConnect(light_name);
 
   WiFi.macAddress(mac);
 
@@ -114,7 +117,7 @@ void setup() {
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": " + String(devicesCount) + ",\"modelid\": \"Plug 01\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": " + String(devicesCount) + ",\"name\": \"" light_name "\",\"modelid\": \"Plug 01\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
   });
 
   server.on("/", []() {
