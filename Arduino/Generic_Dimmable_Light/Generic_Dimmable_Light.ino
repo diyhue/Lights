@@ -6,6 +6,7 @@
 #include <WiFiManager.h>
 #include <EEPROM.h>
 
+#define light_name "Dimmable Hue Light"  //default light name
 
 #define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true.
 //For GPIO based on/off and brightness control, it is mandatory to connect the following GPIO pins to ground using 10k resistor
@@ -160,7 +161,9 @@ void setup() {
     }
   }
   WiFiManager wifiManager;
-  wifiManager.autoConnect("New Hue Light");
+  wifiManager.setConfigPortalTimeout(120);
+  wifiManager.autoConnect(light_name);
+  
   if (! light_state[0])  {
     // Show that we are connected
     analogWrite(pins[0], 100);
@@ -289,7 +292,7 @@ void setup() {
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": " + (String)LIGHTS_COUNT + ",\"modelid\": \"LWB010\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": " + (String)LIGHTS_COUNT + ",\"name\": \"" light_name "\",\"modelid\": \"LWB010\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
   });
 
   server.on("/", []() {
