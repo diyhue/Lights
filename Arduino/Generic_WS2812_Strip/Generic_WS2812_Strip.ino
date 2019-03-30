@@ -405,10 +405,9 @@ void lightEngine() {
 }
 
 void saveState() {
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& json = jsonBuffer.createObject();
+  DynamicJsonDocument json(1024);
   for (uint8_t i = 0; i < lightsCount; i++) {
-    JsonObject& light = json.createNestedObject((String)i);
+    JsonObject light = json.createNestedObject((String)i);
     light["on"] = lights[i].lightState;
     light["bri"] = lights[i].bri;
     if (lights[i].colorMode == 1) {
@@ -422,7 +421,7 @@ void saveState() {
     }
   }
   File stateFile = SPIFFS.open("/state.json", "w");
-  json.printTo(stateFile);
+  serializeJson(json, stateFile);
 
 }
 
@@ -434,27 +433,16 @@ void restoreState() {
     return;
   }
 
-  size_t size = stateFile.size();
-
-  // Allocate a buffer to store contents of the file.
-  std::unique_ptr<char[]> buf(new char[size]);
-
-  // We don't use String here because ArduinoJson library requires the input
-  // buffer to be mutable. If you don't use ArduinoJson, you may as well
-  // use configFile.readString instead.
-  stateFile.readBytes(buf.get(), size);
-
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& json = jsonBuffer.parseObject(buf.get());
-
-  if (!json.success()) {
+  DynamicJsonDocument json(1024);
+  DeserializationError error = deserializeJson(json, stateFile.readString());
+  if (error) {
     //Serial.println("Failed to parse config file");
     return;
   }
-  for (JsonPair& state : json) {
-    const char* key = state.key;
+  for (JsonPair state : json.as<JsonObject>()) {
+    const char* key = state.key().c_str();
     int lightId = atoi(key);
-    JsonObject& values = state.value;
+    JsonObject values = state.value();
     lights[lightId].lightState = values["on"];
     lights[lightId].bri = (uint8_t)values["bri"];
     if (values.containsKey("x")) {
@@ -479,8 +467,7 @@ void restoreState() {
 
 
 bool saveConfig() {
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& json = jsonBuffer.createObject();
+  DynamicJsonDocument json(1024);
   json["name"] = lightName;
   json["startup"] = startup;
   json["scene"] = scene;
@@ -491,17 +478,17 @@ bool saveConfig() {
   json["lightsCount"] = lightsCount;
   json["pixelCount"] = pixelCount;
   json["transLeds"] = transitionLeds;
-  JsonArray& addr = json.createNestedArray("addr");
+  JsonArray addr = json.createNestedArray("addr");
   addr.add(address[0]);
   addr.add(address[1]);
   addr.add(address[2]);
   addr.add(address[3]);
-  JsonArray& gw = json.createNestedArray("gw");
+  JsonArray gw = json.createNestedArray("gw");
   gw.add(gateway[0]);
   gw.add(gateway[1]);
   gw.add(gateway[2]);
   gw.add(gateway[3]);
-  JsonArray& mask = json.createNestedArray("mask");
+  JsonArray mask = json.createNestedArray("mask");
   mask.add(submask[0]);
   mask.add(submask[1]);
   mask.add(submask[2]);
@@ -512,7 +499,7 @@ bool saveConfig() {
     return false;
   }
 
-  json.printTo(configFile);
+  serializeJson(json, configFile);
   return true;
 }
 
@@ -529,20 +516,14 @@ bool loadConfig() {
     return false;
   }
 
-  // Allocate a buffer to store contents of the file.
-  std::unique_ptr<char[]> buf(new char[size]);
+  if (configFile.size() > 1024) {
+    Serial.println("Config file size is too large");
+    return false;
+  }
 
-  // We don't use String here because ArduinoJson library requires the input
-  // buffer to be mutable. If you don't use ArduinoJson, you may as well
-  // use configFile.readString instead.
-  configFile.readBytes(buf.get(), size);
-
-  //Serial.println(buf.get());
-
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& json = jsonBuffer.parseObject(buf.get());
-
-  if (!json.success()) {
+  DynamicJsonDocument json(1024);
+  DeserializationError error = deserializeJson(json, configFile.readString());
+  if (error) {
     //Serial.println("Failed to parse config file");
     return false;
   }
@@ -655,15 +636,15 @@ void setup() {
 
   server.on("/state", HTTP_PUT, []() {
     bool stateSave = false;
-    DynamicJsonBuffer newBuffer;
-    JsonObject& root = newBuffer.parseObject(server.arg("plain"));
-    if (!root.success()) {
+    DynamicJsonDocument root(1024);
+    DeserializationError error = deserializeJson(root, server.arg("plain"));
+    if (error) {
       server.send(404, "text/plain", "FAIL. " + server.arg("plain"));
     } else {
-      for (JsonPair& state : root) {
-        const char* key = state.key;
+      for (JsonPair state : root.as<JsonObject>()) {
+        const char* key = state.key().c_str();
         int light = atoi(key) - 1;
-        JsonObject& values = state.value;
+        JsonObject values = state.value();
         int transitiontime = 4;
 
         if (values.containsKey("xy")) {
@@ -719,7 +700,7 @@ void setup() {
         processLightdata(light, transitiontime);
       }
       String output;
-      root.printTo(output);
+      serializeJson(root, output);
       server.send(200, "text/plain", output);
       if (stateSave) {
         saveState();
@@ -729,12 +710,10 @@ void setup() {
 
   server.on("/state", HTTP_GET, []() {
     uint8_t light = server.arg("light").toInt() - 1;
-    DynamicJsonBuffer newBuffer;
-    JsonObject& root = newBuffer.createObject();
-
+    DynamicJsonDocument root(1024);
     root["on"] = lights[light].lightState;
     root["bri"] = lights[light].bri;
-    JsonArray& xy = root.createNestedArray("xy");
+    JsonArray xy = root.createNestedArray("xy");
     xy.add(lights[light].x);
     xy.add(lights[light].y);
     root["ct"] = lights[light].ct;
@@ -747,15 +726,14 @@ void setup() {
     else if (lights[light].colorMode == 3)
       root["colormode"] = "hs";
     String output;
-    root.printTo(output);
+    serializeJson(root, output);
     server.send(200, "text/plain", output);
   });
 
   server.on("/detect", []() {
     char macString[32] = {0};
     sprintf(macString, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    DynamicJsonBuffer newBuffer;
-    JsonObject& root = newBuffer.createObject();
+    DynamicJsonDocument root(1024);
     root["name"] = lightName;
     root["lights"] = lightsCount;
     root["protocol"] = "native_multi";
@@ -764,13 +742,12 @@ void setup() {
     root["mac"] = String(macString);
     root["version"] = 2.0;
     String output;
-    root.printTo(output);
+    serializeJson(root, output);
     server.send(200, "text/plain", output);
   });
 
   server.on("/config", []() {
-    DynamicJsonBuffer newBuffer;
-    JsonObject& root = newBuffer.createObject();
+    DynamicJsonDocument root(1024);
     root["name"] = lightName;
     root["scene"] = scene;
     root["startup"] = startup;
@@ -786,7 +763,7 @@ void setup() {
     root["gw"] = (String)gateway[0] + "." + (String)gateway[1] + "." + (String)gateway[2] + "." + (String)gateway[3];
     root["sm"] = (String)submask[0] + "." + (String)submask[1] + "." + (String)submask[2] + "." + (String)submask[3];
     String output;
-    root.printTo(output);
+    serializeJson(root, output);
     server.send(200, "text/plain", output);
   });
 
