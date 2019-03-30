@@ -91,7 +91,7 @@ if [ $? -ne 0 ]; then echo -e "\xe2\x9c\x96 OR CACHED"; else echo -e """$GREEN""
 
 # Install required libraries
 echo -n "INSTALL LIBRARIES: "
-DEPENDENCY_OUTPUT=$(arduino-cli lib install WiFiManager ArduinoJson@5.13.4 rc-switch FastLED "NeoPixelBus by Makuna" 2>&1)
+DEPENDENCY_OUTPUT=$(arduino-cli lib install WiFiManager ArduinoJson@6.9.1 rc-switch FastLED "NeoPixelBus by Makuna" 2>&1)
 if [ $? -ne 0 ]; then echo -e """$RED""\xe2\x9c\x96"; else echo -e """$GREEN""\xe2\x9c\x93"; fi
 
 echo -e "\n########################################################################";
