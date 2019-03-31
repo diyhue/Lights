@@ -3,12 +3,17 @@
 Create your own diyHue compatible Lights!
 
 Steps to Follow:
-- Select your Platform of choice and the correct Sketch according to your Harware Setup (e.g. WS2812b)
-- Edit the Number of (virtual) Lights and the number of LEDS used in your Setup within your Sketch if needed.
-- Upload Firmware to Microcontroller
-- Connect Hardware and Powersupply
-- Configure Microcontroller by connecting to its Wifi, adding Credentials for Wifi Network.
-- Add new created diyHue Lamp within APP by searching for new Devices.
+- Select the correct Sketch according to your Harware Setup (e.g. WS2812b)
+- Upload Firmware to Microcontroller with Arduino IDE (No Changes to Code)
+- Connect Hardware (LEDs) and Powersupply
+- Connect to ESP8266 WiFi (e.g. search for new WiFi on Smartphone) --> `"Hue rgb strip`
+- Browse `192.168.4.1` --> Connect ESP8266 to your local WiFi
+- Check and browse local IP of ESP8266
+    - Configure Light from WEB UI (Number of Emulated Lights, Total Number of connected LEDs)
+    - Rename you new diyHue Light
+
+- HUE APP: Add new created diyHue Light within APP by searching for new Devices.
+
 
 More Information is available in our [documentation](https://diyhue.readthedocs.io/en/latest/lights/diylights.html)
 
