@@ -9,7 +9,7 @@ echo "########################################################################";
 
 # if .travis.yml does not set version
 if [ -z $ARDUINO_CLI_VERSION ]; then
-export ARDUINO_CLI_VERSION="0.3.4-alpha.preview"
+export $ARDUINO_CLI_VERSION="0.3.4-alpha.preview"
 echo "NOTE: YOUR .TRAVIS.YML DOES NOT SPECIFY ARDUINO CLI VERSION, USING $ARDUINO_CLI_VERSION"
 fi
 
