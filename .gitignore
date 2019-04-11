@@ -4,3 +4,5 @@
 *.cpp
 *.ld
 *.cache
+*.a
+*.h
