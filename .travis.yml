@@ -28,9 +28,9 @@ script:
   - "ls $PWD"
 #  - source $TRAVIS_BUILD_DIR/travis/common.sh
 #  - build_examples
-  - if [ ! -d "${TRAVIS_BUILD_DIR}/Arduino/bin/test" ] then
-      mkdir ${TRAVIS_BUILD_DIR}/Arduino/bin/test
-    fi
+  #- if [ ! -d "${TRAVIS_BUILD_DIR}/Arduino/bin/test" ] then
+  #    mkdir ${TRAVIS_BUILD_DIR}/Arduino/bin/test
+  #  fi
   - arduino --verify --preserve-temp-files --pref build.path="${TRAVIS_BUILD_DIR}/Arduino/bin/test" ${TRAVIS_BUILD_DIR}/Arduino/$SKETCH/$SKETCH.ino
 #  - "cat $PWD/examples/AutoConnect/AutoConnect.ino"
 #  - arduino -v --verbose-build --verify $PWD/examples/AutoConnect/AutoConnect.ino
