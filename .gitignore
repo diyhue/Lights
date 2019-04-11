@@ -1,2 +1,6 @@
 *.elf
-Arduino/bin/test/
+*.d
+*.o
+*.cpp
+*.ld
+*.cache
