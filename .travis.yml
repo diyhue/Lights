@@ -22,10 +22,8 @@ script:
   - "ls $PWD"
 #  - source $TRAVIS_BUILD_DIR/travis/common.sh
 #  - build_examples
-   - arduino --verify --board esp8266:esp8266:nodemcu ${TRAVIS_BUILD_DIR}/Arduino/$SKETCH/$SKETCH.ino --output ${TRAVIS_BUILD_DIR}/Arduino/bin/$SKETCH.bin
+  - arduino --verify --board esp8266:esp8266:nodemcu ${TRAVIS_BUILD_DIR}/Arduino/$SKETCH/$SKETCH.ino --output ${TRAVIS_BUILD_DIR}/Arduino/bin/$SKETCH.bin
 #  - "cat $PWD/examples/AutoConnect/AutoConnect.ino"
 #  - arduino -v --verbose-build --verify $PWD/examples/AutoConnect/AutoConnect.ino
 #  - arduino --verify --board arduino:avr:uno $PWD/examples/IncomingCall/IncomingCall.ino
 #  - arduino --verify --board arduino:avr:uno $PWD/examples/AdafruitIO_GPS/AdafruitIO_GPS.ino
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
