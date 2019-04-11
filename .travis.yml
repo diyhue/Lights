@@ -35,10 +35,10 @@ script:
 #  - arduino --verify --board arduino:avr:uno $PWD/examples/AdafruitIO_GPS/AdafruitIO_GPS.ino
 
 after_success:
-  cd ${TRAVIS_BUILD_DIR}
-    git checkout cheesemarathon-patch-1
-    git add *
-    git commit --message "Build Test"
-    git remote add origin-travis https://${GH_TOKEN}@github.com/diyhue/Lights.git
-    git pull origin-travis cheesemarathon-patch-1
-    git push origin-travis cheesemarathon-patch-1
+  - cd ${TRAVIS_BUILD_DIR}
+  - git checkout cheesemarathon-patch-1
+  - git add *
+  - git commit --message "Build Test"
+  - git remote add origin-travis https://${GH_TOKEN}@github.com/diyhue/Lights.git
+  - git pull origin-travis cheesemarathon-patch-1
+  - git push origin-travis cheesemarathon-patch-1
