@@ -18,8 +18,8 @@ install:
 # install lib arduino json not working in 1.6.5
   - arduino --install-library WiFiManager,ArduinoJson:6.10.0,rc-switch,FastLED,"NeoPixelBus by Makuna"
   #- git clone https://github.com/bblanchon/ArduinoJson /usr/local/share/arduino/libraries/ArduinoJson
-  - arduino --install-boards esp8266:esp8266:generic:xtal=80,vt=flash,exception=disabled,ResetMethod=ck,CrystalFreq=26,FlashFreq=40,FlashMode=dout,eesz=512K,led=2,ip=lm2f,dbg=Disabled,lvl=None____,wipe=none,baud=115200
-  - arduino --board esp8266:esp8266:generic --save-prefs
+  - arduino --install-boards esp8266:esp8266
+  - arduino --board esp8266:esp8266:generic:xtal=80,vt=flash,exception=disabled,ResetMethod=ck,CrystalFreq=26,FlashFreq=40,FlashMode=dout,eesz=512K,led=2,ip=lm2f,dbg=Disabled,lvl=None____,wipe=none,baud=115200 --save-prefs
   - arduino --pref "compiler.warning_level=all" --save-prefs
 script:
   - "echo $PWD"
