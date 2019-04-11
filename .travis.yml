@@ -27,8 +27,7 @@ script:
   - "ls $PWD"
 #  - source $TRAVIS_BUILD_DIR/travis/common.sh
 #  - build_examples
-  - mkdir ${TRAVIS_BUILD_DIR}/Arduino/bin/
-  - arduino --verify --preserve-temp-files --board esp8266:esp8266:nodemcu --build.path=${TRAVIS_BUILD_DIR}/Arduino/bin/ ${TRAVIS_BUILD_DIR}/Arduino/$SKETCH/$SKETCH.ino
+  - arduino --verify --preserve-temp-files --board esp8266:esp8266:nodemcu --build.path="${TRAVIS_BUILD_DIR}/Arduino/bin" ${TRAVIS_BUILD_DIR}/Arduino/$SKETCH/$SKETCH.ino
 #  - "cat $PWD/examples/AutoConnect/AutoConnect.ino"
 #  - arduino -v --verbose-build --verify $PWD/examples/AutoConnect/AutoConnect.ino
 #  - arduino --verify --board arduino:avr:uno $PWD/examples/IncomingCall/IncomingCall.ino
