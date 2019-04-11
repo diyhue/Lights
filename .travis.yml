@@ -16,7 +16,7 @@ install:
 # boards manager not working on 1.6.7 - 1.6.8
   - arduino --pref "boardsmanager.additional.urls=http://arduino.esp8266.com/stable/package_esp8266com_index.json" --save-prefs
 # install lib arduino json not working in 1.6.5
-  - arduino --install-library ArduinoJson@6.10.0
+  - arduino --install-library WiFiManager,ArduinoJson:6.10.0,rc-switch,FastLED,"NeoPixelBus by Makuna"
   #- git clone https://github.com/bblanchon/ArduinoJson /usr/local/share/arduino/libraries/ArduinoJson
   - arduino --install-boards esp8266:esp8266
   - arduino --board esp8266:esp8266:generic --save-prefs
