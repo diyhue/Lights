@@ -6,6 +6,6 @@
   "hardwareFolders": "/usr/local/share/arduino/hardware,/home/travis/.arduino15/packages",
   "otherLibrariesFolders": "/home/travis/Arduino/libraries",
   "runtime.ide.version": "10809",
-  "sketchLocation": "/home/travis/build/diyhue/Lights/Arduino/Generic_RGBW_Light/Generic_RGBW_Light.ino",
+  "sketchLocation": "/home/travis/build/diyhue/Lights/Arduino/Generic_WS2812_Strip/Generic_WS2812_Strip.ino",
   "toolsFolders": "/usr/local/share/arduino/tools-builder,/usr/local/share/arduino/hardware/tools/avr,/home/travis/.arduino15/packages"
 }
