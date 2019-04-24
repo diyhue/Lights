@@ -585,7 +585,7 @@ void userBegin()
     if (error) {
       server.send(404, "text/plain", "FAIL. " + server.arg("plain"));
     } else {
-      for (JsonPair& state : root.as<JsonObject>()) {
+      for (JsonPair state : root.as<JsonObject>()) {
         const char* key = state.key().c_str();
         int light = atoi(key) - 1;
         JsonObject values = state.value();
@@ -644,7 +644,7 @@ void userBegin()
         processLightdata(light, transitiontime);
       }
       String output;
-      root.printTo(output);
+      serializeJson(root, output);
       server.send(200, "text/plain", output);
       if (stateSave) {
         saveState();
