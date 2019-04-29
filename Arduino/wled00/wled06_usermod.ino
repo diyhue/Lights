@@ -6,8 +6,6 @@
 
 //Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
 
-#include <FS.h>
-#include <NeoPixelBus.h>
 #include <ArduinoJson.h>
 
 struct state {
@@ -18,22 +16,13 @@ struct state {
 };
 
 //core
-
 #define entertainmentTimeout 1500 // millis
 
 state lights[10];
 bool inTransition, entertainmentRun, useDhcp = true;
 byte mac[6], packetBuffer[46];
 unsigned long lastEPMillis;
-
-//settings
-char *lightName = "Wled diyHue Strip";
-uint8_t scene, startup, onPin = 14, offPin = 12;
-bool hwSwitch = false;
-
-uint8_t lightsCount = 4;
 uint16_t pixelCount = ledCount, lightLedsCount;
-uint8_t transitionLeds = 0; // must be even number
 
 ESP8266HTTPUpdateServer httpUpdateServer;
 
@@ -42,7 +31,7 @@ RgbColor green = RgbColor(0, 255, 0);
 RgbColor white = RgbColor(255);
 RgbColor black = RgbColor(0);
 
-NeoPixelBus<NeoGrbFeature, NeoEsp8266UartWs2813Method>* _pGrb = NULL;
+NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>* _pGrb = NULL;
 
 void convertHue(uint8_t light)
 {
@@ -279,6 +268,7 @@ void lightEngine() {
           _pGrb->ClearTo(convFloat(lights[light].currentColors), 0, pixelCount - 1);
         }
         _pGrb->Show();
+		    colorUpdated(5);
       }
     } else {
       if (lights[light].currentColors[0] != 0 || lights[light].currentColors[1] != 0 || lights[light].currentColors[2] != 0) {
@@ -319,6 +309,7 @@ void lightEngine() {
           _pGrb->ClearTo(convFloat(lights[light].currentColors), 0, pixelCount - 1);
         }
         _pGrb->Show();
+		    colorUpdated(5);
       }
     }
   }
@@ -391,7 +382,6 @@ void saveState() {
 
 }
 
-
 void restoreState() {
   File stateFile = SPIFFS.open("/state.json", "r");
   if (!stateFile) {
@@ -430,7 +420,6 @@ void restoreState() {
     }
   }
 }
-
 
 bool saveConfig() {
   DynamicJsonDocument json(1024);
@@ -509,7 +498,7 @@ void ChangeNeoPixels(uint16_t newCount)
   if (_pGrb != NULL) {
     delete _pGrb; // delete the previous dynamically created strip
   }
-  _pGrb = new NeoPixelBus<NeoGrbFeature, NeoEsp8266UartWs2813Method>(newCount); // and recreate with new count
+  _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(newCount); // and recreate with new count
   _pGrb->Begin();
 }
 
@@ -568,9 +557,7 @@ void userBegin()
   }
 
   WiFi.macAddress(mac);
-
   httpUpdateServer.setup(&server);
-
   Udp.begin(2100);
 
   if (hwSwitch == true) {
@@ -644,7 +631,7 @@ void userBegin()
         processLightdata(light, transitiontime);
       }
       String output;
-      serializeJson(root, output);
+      serializeJson(root,output);
       server.send(200, "text/plain", output);
       if (stateSave) {
         saveState();
@@ -738,7 +725,7 @@ void entertainment() {
       lights[packetBuffer[i * 4]].currentColors[2] = packetBuffer[i * 4 + 3];
     }
     for (uint8_t light = 0; light < lightsCount; light++) {
-      if (lightsCount > 1) {
+      if (lightsCount >= 1) {
         if (light == 0) {
           for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds / 2; pixel++) {
             if (pixel < lightLedsCount - transitionLeds / 2) {
@@ -765,6 +752,7 @@ void entertainment() {
       }
     }
     _pGrb->Show();
+	  colorUpdated(5);
   }
 }
 

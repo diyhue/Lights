@@ -295,6 +295,8 @@ void getSettingsJS(byte subPage)
     sappend('c',"HB",hueApplyBri);
     sappend('c',"HC",hueApplyColor);
     sappends('m',"(\"hms\")[0]",hueError);
+	  sappend('v',"DC",lightsCount);
+	  sappend('v',"LT",transitionLeds);
   }
 
   if (subPage == 5)
