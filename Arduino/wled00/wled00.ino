@@ -78,8 +78,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1902122
-char versionString[] = "0.8.3";
+#define VERSION 1904281
+char versionString[] = "0.8.3-diyHue";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -111,18 +111,24 @@ bool recoveryAPDisabled = false;              //never open AP (not recommended)
 IPAddress staticIP(0, 0, 0, 0);               //static IP of ESP
 IPAddress staticGateway(0, 0, 0, 0);          //gateway (router) IP
 IPAddress staticSubnet(255, 255, 255, 0);     //most common subnet in home networks
-IPAddress staticDNS(8, 8, 8, 8);              //only for NTP, google DNS server
+IPAddress staticDNS(1, 1, 1, 1);              //only for NTP, google DNS server
 
+//diyHue CONFIG
+char *lightName = "Wled diyHue Strip";
+bool hwSwitch = false;
+uint8_t lightsCount = 4;
+uint8_t transitionLeds = 0; // must be even number
+uint8_t scene, startup, onPin = 14, offPin = 12;
 
 //LED CONFIG
 uint16_t ledCount = 100;                       //overcurrent prevented by ABL             
 bool useRGBW = false;                         //SK6812 strips can contain an extra White channel
 bool autoRGBtoRGBW = false;                   //if RGBW enabled, calculate White channel from RGB
 #define ABL_MILLIAMPS_DEFAULT 850;            //auto lower brightness to stay close to milliampere limit 
-bool turnOnAtBoot  = false;                    //turn on LEDs at power-up
+bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
 byte bootPreset = 0;                          //save preset to load after power-up
 
-byte colS[]{255, 159, 0, 0};                  //default RGB(W) color
+byte colS[]{0, 0, 0, 0};                  //default RGB(W) color
 byte colSecS[]{0, 0, 0, 0};                   //default RGB(W) secondary color
 byte briS = 255;                              //default brightness
 byte effectDefault = 0;                   

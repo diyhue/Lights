@@ -202,6 +202,10 @@ void handleSettingsSet(byte subPage)
       huePollingEnabled = false;
       strcpy(hueError,"Inactive");
     }
+    t = server.arg("DC").toInt();
+    if (t > 0) lightsCount = t;
+    t = server.arg("LT").toInt();
+    if (t >= 0) transitionLeds = t;
   }
 
   //TIME

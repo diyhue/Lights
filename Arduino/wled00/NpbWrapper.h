@@ -24,9 +24,9 @@
 #else //esp8266
  //autoselect the right method depending on strip pin
  #if LEDPIN == 2
-  #define PIXELMETHOD NeoEsp8266UartWs2813Method //if you get an error here, try to change to NeoEsp8266Uart1Ws2813Method or use Neopixelbus v2.3.5
+  #define PIXELMETHOD NeoEsp8266Uart1Ws2813Method //if you get an error here, try to change to NeoEsp8266Uart1Ws2813Method or use Neopixelbus v2.3.5
  #elif LEDPIN == 3
-  #define PIXELMETHOD NeoEsp8266Dma800KbpsMethod
+  #define PIXELMETHOD Neo800KbpsMethod
  #else
   #define PIXELMETHOD NeoEsp8266BitBang800KbpsMethod
   #pragma message "Software BitBang will be used because of your selected LED pin. This may cause flicker. Use GPIO 2 or 3 for best results."
