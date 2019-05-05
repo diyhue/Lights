@@ -34,14 +34,6 @@ function rgb_to_cie(t, e, a) {
 
 
 function updateStatus() {
-    $.getJSON("/state", function(data) {
-        if(!data){
-            console.log('update status err');
-            return;
-        }
-        $("#pow").prop("checked", data.on);
-        slider.noUiSlider.set(data.bri/2.54);
-    });
     $.ajax({
         dataType: "json",
         url: "/state",
@@ -56,7 +48,7 @@ function updateStatus() {
         error: function(){
             console.log('error getting state');
         },
-        timeout: refreshInterval-500
+        timeout: 1000
     });
 }
 
@@ -75,6 +67,7 @@ function updateConfig() {
                 } else{
                     $("#" + key).val(val);
                 }
+                $('select').formSelect();
             });
             $(".brand-logo").text(json.name);
             toggleSections($('input[type="checkbox"]'));
@@ -84,7 +77,7 @@ function updateConfig() {
         },
         timeout: 5000,
     });
-    console.log('update config triggered');
+    console.log('update config done');
 }
 
 function toggleSections(ele){
@@ -101,7 +94,6 @@ function toggleSections(ele){
 $(function(){
     $('.sidenav').sidenav();
     $('.tabs').tabs();
-    $('select').formSelect();
 
     $('input[type="checkbox"]').change(function(){
         toggleSections($(this));

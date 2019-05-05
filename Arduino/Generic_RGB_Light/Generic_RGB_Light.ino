@@ -449,7 +449,7 @@ void handleNotFound() {
 void setup() {
   //Serial.begin(115200);
   //Serial.println();
-  delay(1000);
+  delay(100);
 
   //Serial.println("mounting FS...");
 
@@ -695,8 +695,8 @@ void setup() {
 
     server.send(200, "text/html", htmlContent);
    
-    if (server.hasArg("section")) {
-      delay(1000);
+    if (server.args()) {
+      delay(1000); // needs to wait until response is received by browser. If ESP restarts too soon, browser will think there was an error.
       ESP.restart();
     }
   });
