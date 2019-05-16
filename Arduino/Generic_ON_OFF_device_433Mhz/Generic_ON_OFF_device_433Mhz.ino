@@ -22,20 +22,20 @@ RCSwitch mySwitch = RCSwitch();
 
 //############ CONFIG ############
 
- #define light_name "On-OFF Hue 433Mhz"  //default light name
+#define light_name "On-OFF Hue 433Mhz"  //default light name
 
 #define devicesCount 8 // 4 or 8 --> maximum 8
 char* houseCodeA = "11110"; //Group A --> Remote Code for Socket 1-4
 char* houseCodeB = "11100"; //Group B --> Remote Code for Socket 5-8
+uint8_t transmitterPin = 4;     // What Pin is the Transmitter conected?
+uint8_t transmitterDelay = 100; // Delay between sending commands in ms //default 100
+uint8_t repeatTransmit = 2; // Number of Transmit attempts //default 2
 
 //##########END OF CONFIG ##############
 
 
 
 uint8_t devicesPins[devicesCount] = {12, 13, 14, 5, 12, 13, 14, 5}; //irrelevant
-uint8_t transmitterPin = 4;     // What Pin is the Transmitter conected?
-uint8_t transmitterDelay = 100; // Delay between sending commands in ms
-uint8_t repeatTransmit = 2; // Number of Transmit attempts
 char* deviceId[] = {"10000", "01000", "00100", "00010", "10000", "01000", "00100", "00010"};
 int c;
 
