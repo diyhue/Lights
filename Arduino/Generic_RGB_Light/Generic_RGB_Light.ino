@@ -13,8 +13,10 @@ IPAddress address ( 192,  168,   0,  95); // choose an unique IP Adress
 IPAddress gateway ( 192,  168,   0,   1); // Router IP
 IPAddress submask (255, 255, 255,   0);
 
-#define light_version 2.01
+#define light_version "1.0m"
 #define PWM_CHANNELS 3
+#define WIFIMANAGER_AP "New Hue RGB light"
+#define entertainmentTimeout 1500 // millis
 
 struct state {
   uint8_t colors[PWM_CHANNELS], bri = 100, sat = 254, colorMode = 2;
@@ -25,7 +27,6 @@ struct state {
 
 //core
 
-#define entertainmentTimeout 1500 // millis
 
 state light;
 bool inTransition, entertainmentRun, useDhcp = true;
@@ -33,7 +34,7 @@ byte mac[6], packetBuffer[8];
 unsigned long lastEPMillis;
 
 //settings
-char *lightName = "New Hue RGB light";
+char lightName[32] = "New Hue RGB light";
 uint8_t scene = 0, startup = false, onPin = 4, offPin = 5, pins[] = {12, 13, 14}; //red, green, blue
 bool hwSwitch = false;
 uint8_t rgb_multiplier[] = {100, 100, 100}; // light multiplier in percentage /R, G, B/
@@ -447,8 +448,8 @@ void handleNotFound() {
 }
 
 void setup() {
-  //Serial.begin(115200);
-  //Serial.println();
+  Serial.begin(115200);
+  Serial.println();
   delay(100);
 
   //Serial.println("mounting FS...");
@@ -489,7 +490,7 @@ void setup() {
     wifiManager.setSTAStaticIPConfig(address, gateway, submask);
   }
 
-  if (!wifiManager.autoConnect(lightName)) {
+  if (!wifiManager.autoConnect(WIFIMANAGER_AP)) {
     delay(3000);
     ESP.reset();
     delay(5000);
@@ -649,7 +650,7 @@ void setup() {
 
   server.on("/", []() {
     if (server.arg("section").toInt() == 1) {
-      server.arg("name").toCharArray(lightName, server.arg("name").length() + 1);
+      server.arg("name").toCharArray(lightName, 32);
       startup = server.arg("startup").toInt();
       scene = server.arg("scene").toInt();
       pins[0] = server.arg("red").toInt();
@@ -703,7 +704,7 @@ void setup() {
 
   server.on("/reset", []() {
     server.send(200, "text/html", "reset");
-    delay(100);
+    delay(1000);
     ESP.restart();
   });
 

@@ -404,3 +404,8 @@
 .noUi-vertical .noUi-active .noUi-tooltip span {
   opacity: 1;
 }
+
+/* CUSTOMIZATIONS */
+.noUi-handle-touch-area{
+  z-index: 5;
+}
