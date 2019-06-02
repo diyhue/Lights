@@ -48,6 +48,7 @@ RgbColor white = RgbColor(255);
 RgbColor black = RgbColor(0);
 
 NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod>* strip = NULL;
+//NeoPixelBus<NeoBrgFeature, Neo800KbpsMethod>* strip = NULL; // WS2811
 
 void convertHue(uint8_t light)
 {
@@ -551,6 +552,9 @@ bool loadConfig() {
   lightsCount = (uint16_t) json["lightsCount"];
   pixelCount = (uint16_t) json["pixelCount"];
   transitionLeds = (uint8_t) json["transLeds"];
+  rgb_multiplier[0] = (uint8_t) json["rpct"];
+  rgb_multiplier[1] = (uint8_t) json["gpct"];
+  rgb_multiplier[2] = (uint8_t) json["bpct"];
   useDhcp = json["dhcp"];
   address = {json["addr"][0], json["addr"][1], json["addr"][2], json["addr"][3]};
   submask = {json["mask"][0], json["mask"][1], json["mask"][2], json["mask"][3]};
@@ -564,6 +568,7 @@ void ChangeNeoPixels(uint16_t newCount)
     delete strip; // delete the previous dynamically created strip
   }
   strip = new NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod>(newCount); // and recreate with new count
+  //strip = new NeoPixelBus<NeoBrgFeature, Neo800KbpsMethod>(newCount); // and recreate with new count
   strip->Begin();
 }
 
