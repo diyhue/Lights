@@ -854,7 +854,9 @@ void entertainment() {
           }
         }
       } else {
-        strip->ClearTo(RgbColor(lights[0].colors[0], lights[0].colors[1], lights[0].colors[2]), 0, lightLedsCount - 1);
+        for (uint8_t pixel = 0; pixel < lightLedsCount; pixel++) {
+          strip->SetPixelColor(pixel, convInt(lights[light].currentColors));
+        }
       }
     }
     strip->Show();

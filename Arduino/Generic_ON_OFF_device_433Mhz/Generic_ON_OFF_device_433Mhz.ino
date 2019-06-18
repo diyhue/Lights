@@ -5,9 +5,6 @@
   Maximum 8 Devices.
   Simulates 2 Remotes with 4 Items each.
   Showing 8 Individual Hue Bulbs
-  
-  Edit Config as needed
-  by Mevel
 
 */
 
@@ -25,21 +22,22 @@ RCSwitch mySwitch = RCSwitch();
 
 //############ CONFIG ############
 
-#define devicesCount 8 // 4 or 8 --> Maximum 8
+#define light_name "On-OFF Hue 433Mhz"  //default light name
+
+#define devicesCount 8 // 4 or 8 --> maximum 8
 char* houseCodeA = "11110"; //Group A --> Remote Code for Socket 1-4
 char* houseCodeB = "11100"; //Group B --> Remote Code for Socket 5-8
+uint8_t transmitterPin = 4;     // What Pin is the Transmitter conected?
+uint8_t transmitterDelay = 100; // Delay between sending commands in ms //default 100
+uint8_t repeatTransmit = 2; // Number of Transmit attempts //default 2
 
 //##########END OF CONFIG ##############
 
 
 
 uint8_t devicesPins[devicesCount] = {12, 13, 14, 5, 12, 13, 14, 5}; //irrelevant
-uint8_t transmitterPin = 4;     // What Pin is the Transmitter conected?
-uint8_t transmitterDelay = 100; // Delay between sending commands in ms
-uint8_t repeatTransmit = 2; // Number of Transmit attempts
 char* deviceId[] = {"10000", "01000", "00100", "00010", "10000", "01000", "00100", "00010"};
 int c;
-
 
 
 //#define USE_STATIC_IP //! uncomment to enable Static IP Adress
@@ -48,6 +46,7 @@ IPAddress strip_ip ( 192,  168,   0,  95); // choose an unique IP Adress
 IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
 IPAddress subnet_mask(255, 255, 255,   0);
 #endif
+
 
 bool device_state[devicesCount];
 byte mac[6];
@@ -112,11 +111,11 @@ void setup() {
   for (uint8_t ch = 0; ch < devicesCount; ch++) {
     pinMode(devicesPins[ch], OUTPUT);
   }
+  
 
-#ifdef USE_STATIC_IP
+ #ifdef USE_STATIC_IP
   WiFi.config(strip_ip, gateway_ip, subnet_mask);
 #endif
-
 
 
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
@@ -127,7 +126,9 @@ void setup() {
   }
 
   WiFiManager wifiManager;
-  wifiManager.autoConnect("New Hue Device");
+
+  wifiManager.setConfigPortalTimeout(120);
+  wifiManager.autoConnect(light_name);
 
   WiFi.macAddress(mac);
 
@@ -184,8 +185,10 @@ void setup() {
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": " + String(devicesCount) + ",\"modelid\": \"Plug 01\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
-  });
+    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": " + String(devicesCount) + ",\"name\": \"" light_name "\",\"modelid\": \"Plug 01\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+  
+    
+    });
 
   server.on("/", []() {
     float transitiontime = 100;
