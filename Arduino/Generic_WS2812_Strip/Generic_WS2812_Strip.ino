@@ -35,7 +35,7 @@ bool hwSwitch = false;
 
 uint8_t lightsCount = 3;
 uint16_t pixelCount = 60, lightLedsCount;
-uint8_t transitionLeds = 6; // must be even number
+uint8_t transitionLeds = 6; // pixelCount must be divisible by this value
 
 
 
