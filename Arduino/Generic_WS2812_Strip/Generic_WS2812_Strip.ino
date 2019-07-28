@@ -552,9 +552,11 @@ bool loadConfig() {
   lightsCount = (uint16_t) json["lightsCount"];
   pixelCount = (uint16_t) json["pixelCount"];
   transitionLeds = (uint8_t) json["transLeds"];
-  rgb_multiplier[0] = (uint8_t) json["rpct"];
-  rgb_multiplier[1] = (uint8_t) json["gpct"];
-  rgb_multiplier[2] = (uint8_t) json["bpct"];
+  if (json.containsKey("rpct")) {
+    rgb_multiplier[0] = (uint8_t) json["rpct"];
+    rgb_multiplier[1] = (uint8_t) json["gpct"];
+    rgb_multiplier[2] = (uint8_t) json["bpct"];
+  }
   useDhcp = json["dhcp"];
   address = {json["addr"][0], json["addr"][1], json["addr"][2], json["addr"][3]};
   submask = {json["mask"][0], json["mask"][1], json["mask"][2], json["mask"][3]};
