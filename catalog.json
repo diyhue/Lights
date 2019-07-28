@@ -24,7 +24,7 @@
       "filename":"Generic_RGB_Light.bin"
    },
    "ws2812_strip":{  
-      "version":3.0,
+      "version":3.1,
       "filename":"Generic_WS2812_Strip.bin"
    },
    "ws2812_ring":{  
