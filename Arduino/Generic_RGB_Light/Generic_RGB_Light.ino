@@ -13,7 +13,7 @@ IPAddress address ( 192,  168,   0,  95); // choose an unique IP Adress
 IPAddress gateway ( 192,  168,   0,   1); // Router IP
 IPAddress submask (255, 255, 255,   0);
 
-#define LIGHT_VERSION "3.0"
+#define LIGHT_VERSION 3.0
 #define PWM_CHANNELS 3
 #define LIGHT_NAME_MAX_LENGTH 32 // Longer name will get stripped
 #define ENTERTAINMENT_TIMEOUT 1500 // millis
