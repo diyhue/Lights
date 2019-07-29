@@ -12,7 +12,7 @@ git:
 
 env:
   global:
-     - ARDUINO_CLI_VERSION="0.3.4-alpha.preview"
+     - ARDUINO_CLI_VERSION="0.3.7-alpha.preview"
      - COMMIT=${TRAVIS_COMMIT::8}
   matrix:
     - SKETCH="Generic_RGBW_Light"
