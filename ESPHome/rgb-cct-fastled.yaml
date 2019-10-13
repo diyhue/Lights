@@ -1,0 +1,141 @@
+esphome:
+  name: rgb-cct
+  platform: ESP8266
+  board: esp01_1m
+  platformio_options:
+    lib_deps: ESPAsyncUDP@697c75a025
+  includes:
+    - diyhueayncudp.h
+
+custom_component:
+- lambda: |-
+    auto diyhue = new diyhueudp();
+    return {diyhue};
+    
+#  on_boot:
+#    then:
+#      - light.turn_on:
+#          id: white_led
+#          brightness: 100%
+#          color_temperature: 4000 K
+
+ota:
+  password: "SUPER-SECRET-PASSWORD"
+    
+wifi:
+  ssid: "SUPER-SECRET-SSID"
+  password: "SUPER-SECRET-PASSWORD"
+  
+  manual_ip:
+    static_ip: STATIC_IP
+    gateway: GATEWAY
+    subnet: SUBNET
+  
+  ap:
+   ssid: "LIGHT-NAME"
+  
+# Enable logging
+logger:
+  level: WARN
+
+# Enable Home Assistant API
+api:
+  password: "SUPER-SECRET-PASSWORD"
+  reboot_timeout: 0s
+
+output:
+  - platform: esp8266_pwm
+    pin: GPIO5
+    id: cold_white_gpio
+    frequency: 1000 Hz
+    inverted: False
+    min_power: 0
+    max_power: 0.7
+    
+  - platform: esp8266_pwm
+    pin: GPIO12
+    id: warm_white_gpio
+    frequency: 1000 Hz
+    inverted: False
+    min_power: 0
+    max_power: 0.7
+    
+  - platform: gpio
+    pin: GPIO13
+    id: fast_led_pwr
+    inverted: True
+    
+light:
+  - platform: cwww
+    id: white_led
+    name: "white_led"
+    cold_white: cold_white_gpio
+    warm_white: warm_white_gpio
+    cold_white_color_temperature: 6500 K
+    warm_white_color_temperature: 2000 K
+    gamma_correct: 0.8
+    default_transition_length: 0.4s
+
+  - platform: fastled_spi
+    id: color_led
+    chipset: SM16716
+    data_pin: GPIO14
+    clock_pin: GPIO4
+    num_leds: 1
+    rgb_order: BGR
+    name: "color_led"
+    default_transition_length: 0.4s
+    gamma_correct: 2.6
+    effects:
+      - random:
+          name: Random Effect With Custom Values
+          transition_length: 5s
+          update_interval: 3s
+
+text_sensor:
+  - platform: template
+    name: "light_id"
+    id: light_id
+    lambda: |-
+      return {"esphome_diyhue_light;SUPER-SECRET-MAC;LIGHT-NAME;CT-BOOST;RGB-BOOST"};
+    update_interval: 24h
+    
+switch:
+  - platform: template
+    name: alert
+    id: alert
+    optimistic: true
+    turn_on_action:
+      - light.turn_off: color_led
+      - light.turn_on:
+          id: white_led
+          brightness: 100%
+          color_temperature: 4000 K
+      - delay: 1s
+      - light.turn_on:
+          id: white_led
+          brightness: 10%
+          color_temperature: 4000 K
+      - delay: 1s
+      - light.turn_on:
+          id: white_led
+          brightness: 100%
+          color_temperature: 4000 K
+      - delay: 1s
+      - light.turn_on:
+          id: white_led
+          brightness: 10%
+          color_temperature: 4000 K
+      - delay: 1s
+      - light.turn_on:
+          id: white_led
+          brightness: 100%
+          color_temperature: 4000 K
+      - switch.turn_off: alert
+  - platform: template
+    name: entertainment_switch
+    id: entertainment_switch
+    optimistic: true
+    
+web_server:
+  port: 80
