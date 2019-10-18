@@ -2,10 +2,10 @@ esphome:
   name: rgb-cct
   platform: ESP8266
   board: esp01_1m
-  platformio_options:
-    lib_deps: ESPAsyncUDP@697c75a025
   includes:
     - diyhueayncudp.h
+  libraries:
+    - ESPAsyncUDP@697c75a025
 
 custom_component:
 - lambda: |-
