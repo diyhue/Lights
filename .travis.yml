@@ -21,6 +21,7 @@ env:
     - SKETCH="Generic_RGB_CCT_Light"
     - SKETCH="Generic_WS2812_Strip"
     - SKETCH="Generic_SK6812_Strip"
+    - SKETCH="ESP32_SK9822_FastLED_Strip"
     
     # No update for version 2.0
     #- SKETCH="Generic_Dimmable_Light"
