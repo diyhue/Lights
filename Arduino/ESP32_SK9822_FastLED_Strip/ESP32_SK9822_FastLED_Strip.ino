@@ -8,7 +8,6 @@
 
 #include <FastLED.h>
 #include <Arduino.h>
-#include "Hue.h"
 
 // physical length of led-strip
 #define NUM_LEDS 277
