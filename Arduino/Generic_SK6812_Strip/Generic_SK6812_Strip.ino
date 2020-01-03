@@ -681,7 +681,7 @@ void setup() {
           if (lights[light].lightState) {
             lights[light].currentColors[0] = 0; lights[light].currentColors[1] = 0; lights[light].currentColors[2] = 0; lights[light].currentColors[3] = 0;
           } else {
-            lights[light].currentColors[3] = 126; lights[light].currentColors[4] = 126;
+            lights[light].currentColors[2] = 126; lights[light].currentColors[3] = 126;
           }
         }
         processLightdata(light, transitiontime);
