@@ -3,7 +3,7 @@ esphome:
   platform: ESP8266
   board: esp01_1m
   includes:
-    - diyhueayncudp.h
+    - diyhueasyncudp.h
   libraries:
     - ESPAsyncUDP@697c75a025
 
