@@ -23,16 +23,13 @@ class diyhueudp : public Component {
   void entertainment(AsyncUDPPacket &packet)
   {
     ESP_LOGD("DiyHueUDP", "Entertainment packet arrived");
-    auto call = white_led->turn_off(); //turn off white_led when entertainment starts
-    call.set_transition_length(0);
-    call.perform();
     if (!entertainment_switch->state) {
       entertainment_switch->turn_on();
     }
     lastUDPmilsec = millis(); //reset timeout value
     uint8_t *packetBuffer = packet.data();
     uint32_t packetSize = packet.length();
-    call = color_led->turn_on();
+    auto call = rgbww_led->turn_on();
     if (((packetBuffer[1])+(packetBuffer[2])+(packetBuffer[3])) == 0) {
       call.set_rgb(0,0,0);
       call.set_brightness(0);
