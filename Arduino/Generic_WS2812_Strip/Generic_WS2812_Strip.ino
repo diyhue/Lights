@@ -29,7 +29,7 @@ bool inTransition, entertainmentRun, useDhcp = true;
 byte mac[6], packetBuffer[46];
 unsigned long lastEPMillis;
 uint8_t fade = 5;
-int fadeTime = 80;
+int fadeTime = 90;
 unsigned long currentTime = millis();
 unsigned long loopTime = currentTime;
 int fadeDirection = 0;	 
