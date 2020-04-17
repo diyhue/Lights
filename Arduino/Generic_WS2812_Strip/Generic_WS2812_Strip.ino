@@ -21,12 +21,18 @@ struct state {
   bool lightState;
   int ct = 200, hue;
   float stepLevel[3], currentColors[3], x, y;
+  int fadeDirection = 0;
 };
 
 state lights[10];
 bool inTransition, entertainmentRun, useDhcp = true;
 byte mac[6], packetBuffer[46];
 unsigned long lastEPMillis;
+uint8_t fade = 5;
+int fadeTime = 80;
+unsigned long currentTime = millis();
+unsigned long loopTime = currentTime;
+int fadeDirection = 0;	 
 
 //settings
 char lightName[LIGHT_NAME_MAX_LENGTH] = "Hue WS2812 strip";
@@ -416,6 +422,33 @@ void lightEngine() {
   }
 }
 
+void fadeEngine(){
+  currentTime = millis();
+  if(currentTime > loopTime){
+    for (int light = 0; light < lightsCount; light++) {
+      if(lights[light].fadeDirection >0){
+        if(lights[light].fadeDirection == 1){
+          if (lights[light].bri <= 249){
+            lights[light].bri += fade;
+          }
+          else if (lights[light].bri > 249){
+            lights[light].bri = 254;
+            lights[light].fadeDirection = 0;
+          }
+       }else if(lights[light].fadeDirection == 2){
+         lights[light].bri -= fade;
+         if (lights[light].bri <= 15){
+           lights[light].bri = 15;
+           lights[light].fadeDirection = 0;
+         }
+      }
+      processLightdata(light, 0);
+    }
+  }
+  loopTime = (currentTime + fadeTime);
+  }
+}
+
 void saveState() {
   DynamicJsonDocument json(1024);
   for (uint8_t i = 0; i < lightsCount; i++) {
@@ -703,13 +736,18 @@ void setup() {
         }
 
         if (values.containsKey("bri_inc")) {
-          lights[light].bri += (int) values["bri_inc"];
-          if (lights[light].bri > 255) lights[light].bri = 255;
-          else if (lights[light].bri < 1) lights[light].bri = 1;
+            if(values["bri_inc"] > 0){
+              lights[light].fadeDirection = 1;
+            }else if (values["bri_inc"] == 0){
+              lights[light].fadeDirection = 0;
+            }else if (values["bri_inc"] < 0){
+              lights[light].fadeDirection = 2;
+            }
         }
 
         if (values.containsKey("transitiontime")) {
           transitiontime = values["transitiontime"];
+		  fadeTime = transitiontime*3;
         }
 
         if (values.containsKey("alert") && values["alert"] == "select") {
@@ -900,6 +938,7 @@ void loop() {
   server.handleClient();
   if (!entertainmentRun) {
     lightEngine();
+	fadeEngine();
   } else {
     if ((millis() - lastEPMillis) >= ENTERTAINMENT_TIMEOUT) {
       entertainmentRun = false;
