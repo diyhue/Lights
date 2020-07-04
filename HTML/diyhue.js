@@ -48,15 +48,15 @@ function updateStatus() {
         data: [
             { name: "light", value: "1" },
         ],
-        success: function(data){
-            if(!data){
+        success: function (data) {
+            if (!data) {
                 return;
             }
             $("#pow").prop("checked", data.on);
-            slider.noUiSlider.set(data.bri/2.54);
+            slider.noUiSlider.set(data.bri / 2.54);
             console.log('update state done');
         },
-        error: function(){
+        error: function () {
             console.log('error getting state');
         },
         timeout: 1000
@@ -71,20 +71,26 @@ function updateConfig() {
         retryLimit: 5,
         dataType: 'json',
         contentType: 'application/json',
-        success: function(json) {
+        success: function (json) {
             lightscount = json["lightscount"];
-            $.each(json, function(key, val) {
-                if($("#" + key).is(':checkbox')){
-                    $("input[type=\"checkbox\"]#" + key).addClass('checked-'+val).prop( "checked", !!val );
-                } else{
+            $.each(json, function (key, val) {
+                if ($("#" + key).is(':checkbox')) {
+                    $("input[type=\"checkbox\"]#" + key).addClass('checked-' + val).prop("checked", !!val);
+                } else {
                     $("#" + key).val(val);
                 }
                 $('select').formSelect();
             });
+
+            for (var n = 0; n < lightscount; n++) {
+                var r = $('<div class="col s4 m3"><input type="number" id="lightSplit_' + n + '" class="js-range-slider" data-skin="round" name="lightSplit_' + n + '" value="' + json["lightSplit_" + n] + '"/></div>');
+                $(".lightsplits").append(r);
+            }
+
             $(".brand-logo").text(json.name);
             toggleSections($('input[type="checkbox"]'));
         },
-        error: function() {
+        error: function () {
             return;
         },
         timeout: 5000,
@@ -92,43 +98,42 @@ function updateConfig() {
     console.log('update config done');
 }
 
-function toggleSections(ele){
-    ele.each(function( index ) {
+function toggleSections(ele) {
+    ele.each(function (index) {
         var collapsable = $(this).parents('.row').next('.switchable').find('input[type="text"],input[type="number"]');
-        if($(this).is(":checked")){
+        if ($(this).is(":checked")) {
             collapsable.prop("disabled", !!0);
-        } else{
+        } else {
             collapsable.prop('disabled', !!1);
         }
     });
 }
 
-$(function(){
-    if ($("#lightscount").length){
+$(function () {
+
+    if ($("#lightscount").length) {
         multipleLights = true;
     }
 
     $('.sidenav').sidenav();
     $('.tabs').tabs();
 
-    $('input[type="checkbox"]').change(function(){
+    $('input[type="checkbox"]').change(function () {
         toggleSections($(this));
     });
 
-    $("button[type=submit").click(function(e){
+    $("button[type=submit").click(function (e) {
         e.preventDefault();
         var form = $(this).parents('form');
         $.ajax({
             type: "POST",
             url: $(this).parents('form').action,
             data: form.serialize(), // serializes the form's elements.
-            success: function(data)
-            {
-                M.toast({html: 'Succesful! Rebooting.', classes: 'teal lighten-2'});
+            success: function (data) {
+                M.toast({ html: 'Succesful! Rebooting.', classes: 'teal lighten-2' });
             },
-            error: function(data)
-            {
-                M.toast({html: 'Error occured while sending data. Try again.', classes: 'red lighten-2'});
+            error: function (data) {
+                M.toast({ html: 'Error occured while sending data. Try again.', classes: 'red lighten-2' });
             },
             timeout: 5000,
         });
@@ -164,16 +169,15 @@ $(function(){
         refreshIntervalId = setInterval(updateStatus, refreshInterval);
 
         var value = values[handle];
-        if(multipleLights){
+        if (multipleLights) {
             postDataMultiple({
                 bri: value * 2.54
             });
-        } else{
+        } else {
             postData({
                 bri: value * 2.54
             });
         }
-
     });
 
     slider.noUiSlider.on('set', function (values, handle) {
@@ -192,39 +196,39 @@ $(function(){
     }
     var canvas, ctx = (canvas = document.getElementById("ct")).getContext("2d");
 
-    (gradient = ctx.createLinearGradient(20, 0, 300, 0)).addColorStop(0, "#ACEDFF"), gradient.addColorStop(.5, "#ffffff"), gradient.addColorStop(1, "#FEFFDE"), ctx.fillStyle = gradient, ctx.fillRect(0, 0, 320, 60), $("#hue").click(function(t) {
+    (gradient = ctx.createLinearGradient(20, 0, 300, 0)).addColorStop(0, "#ACEDFF"), gradient.addColorStop(.5, "#ffffff"), gradient.addColorStop(1, "#FEFFDE"), ctx.fillStyle = gradient, ctx.fillRect(0, 0, 320, 60), $("#hue").click(function (t) {
         var e = getPosition(this),
             a = t.pageX - e.x,
             n = t.pageY - e.y,
             o = this.getContext("2d").getImageData(a, n, 1, 1).data;
-        if(multipleLights){
+        if (multipleLights) {
             postDataMultiple({
                 xy: rgb_to_cie(o[0], o[1], o[2])
             });
-        } else{
+        } else {
             postData({
                 xy: rgb_to_cie(o[0], o[1], o[2])
             });
         }
-    }), $("#ct").click(function(t) {
+    }), $("#ct").click(function (t) {
         var e = getPosition(this);
-        if(multipleLights){
+        if (multipleLights) {
             postDataMultiple({
                 ct: t.pageX - e.x + 153
             });
-        } else{
+        } else {
             postData({
                 ct: t.pageX - e.x + 153
             });
         }
     });
 
-    $("#pow").change(function() {
-        if(multipleLights){
+    $("#pow").change(function () {
+        if (multipleLights) {
             postDataMultiple({
                 on: $(this).prop('checked') ? 1 : 0,
             });
-        } else{
+        } else {
             postData({
                 on: $(this).prop('checked') ? 1 : 0,
             });
