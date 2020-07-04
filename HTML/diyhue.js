@@ -83,8 +83,8 @@ function updateConfig() {
             });
 
             for (var n = 0; n < lightscount; n++) {
-                var r = $('<div class="col s4 m3"><input type="number" id="lightSplit_' + n + '" class="js-range-slider" data-skin="round" name="lightSplit_' + n + '" value="' + json["lightSplit_" + n] + '"/></div>');
-                $(".lightsplits").append(r);
+                var r = $('<div class="col s4 m3"><input type="number" id="dividedLight_' + n + '" class="js-range-slider" data-skin="round" name="dividedLight_' + n + '" value="' + json["dividedLight_" + n] + '"/></div>');
+                $(".dividedLights").append(r);
             }
 
             $(".brand-logo").text(json.name);
@@ -110,6 +110,10 @@ function toggleSections(ele) {
 }
 
 $(function () {
+
+    $('.tab').on('click', function (tab) {
+        document.location = "#" + tab.currentTarget.title;
+    });
 
     if ($("#lightscount").length) {
         multipleLights = true;
