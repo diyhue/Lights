@@ -3,7 +3,7 @@ var refreshInterval = 3000;
 var multipleLights = false;
 var lightscount = 0;
 var pixelcount = 0;
-var availablepixels = 0;
+let availablepixels = 0;
 
 function postData(t) {
     var e = new XMLHttpRequest;
@@ -98,7 +98,7 @@ function updateConfig() {
                 $(".dividedLights").append(dividedLightElement);
             }
 
-            $(".availablepixels").html(availablepixels);
+            $(".availablepixels").html("<b>" + availablepixels + "<b>");
 
             $(".brand-logo").text(json.name);
             toggleSections($('input[type="checkbox"]'));
@@ -122,8 +122,22 @@ function toggleSections(ele) {
     });
 }
 
-
 $(function () {
+
+    var oldValue;
+    $('body').on('focus', '.dividedLight', function (cb) {
+        oldValue = parseInt(cb.currentTarget.value);
+    });
+
+    $('body').on('change', '.dividedLight', function (cb) {
+        var summe = parseInt(cb.currentTarget.value) - oldValue;
+        if (summe > 0) {
+            availablepixels = availablepixels - summe;
+        } else {
+            availablepixels = availablepixels + Math.abs(summe);
+        }
+        $(".availablepixels").html("<b>" + availablepixels.toString() + "<b>");
+    });
 
     $('.tab').on('click', function (tab) {
         window.location.href = tab.currentTarget.title;
@@ -143,6 +157,7 @@ $(function () {
     });
 
     $("button[type=submit").click(function (e) {
+        $("button[type=submit").addClass("disabled");
         e.preventDefault();
         var form = $(this).parents('form');
         $.ajax({
@@ -151,9 +166,14 @@ $(function () {
             data: form.serialize(), // serializes the form's elements.
             success: function (data) {
                 M.toast({ html: 'Succesful! Rebooting.', classes: 'teal lighten-2' });
+                setTimeout(
+                    function () {
+                        location.reload()
+                    }, 1500);
             },
             error: function (data) {
                 M.toast({ html: 'Error occured while sending data. Try again.', classes: 'red lighten-2' });
+                $("button[type=submit").removeClass("disabled");
             },
             timeout: 5000,
         });
