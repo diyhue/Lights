@@ -2,6 +2,8 @@ var slider;
 var refreshInterval = 3000;
 var multipleLights = false;
 var lightscount = 0;
+var pixelcount = 0;
+var availablepixels = 0;
 
 function postData(t) {
     var e = new XMLHttpRequest;
@@ -73,6 +75,8 @@ function updateConfig() {
         contentType: 'application/json',
         success: function (json) {
             lightscount = json["lightscount"];
+            pixelcount = json["pixelcount"];
+            availablepixels = json["pixelcount"];
             $.each(json, function (key, val) {
                 if ($("#" + key).is(':checkbox')) {
                     $("input[type=\"checkbox\"]#" + key).addClass('checked-' + val).prop("checked", !!val);
@@ -83,9 +87,18 @@ function updateConfig() {
             });
 
             for (var n = 0; n < lightscount; n++) {
-                var r = $('<div class="col s4 m3"><input type="number" id="dividedLight_' + n + '" class="js-range-slider" data-skin="round" name="dividedLight_' + n + '" value="' + json["dividedLight_" + n] + '"/></div>');
-                $(".dividedLights").append(r);
+                var dividedLightElement;
+                if (!json["dividedLight_" + n]) {
+                    dividedLightElement = $('<div class="col s4 m3"><input type="number" id="dividedLight_' + n + '" class="dividedLight" data-skin="round" name="dividedLight_' + n + '" value="0"/></div>');
+                }
+                else {
+                    dividedLightElement = $('<div class="col s4 m3"><input type="number" id="dividedLight_' + n + '" class="dividedLight" data-skin="round" name="dividedLight_' + n + '" value="' + json["dividedLight_" + n] + '"/></div>');
+                }
+                availablepixels -= parseInt(json["dividedLight_" + n]);
+                $(".dividedLights").append(dividedLightElement);
             }
+
+            $(".availablepixels").html(availablepixels);
 
             $(".brand-logo").text(json.name);
             toggleSections($('input[type="checkbox"]'));
@@ -109,17 +122,20 @@ function toggleSections(ele) {
     });
 }
 
+
 $(function () {
 
     $('.tab').on('click', function (tab) {
-        document.location = "#" + tab.currentTarget.title;
+        window.location.href = tab.currentTarget.title;
+        $('html, body').scrollTop();
     });
 
     if ($("#lightscount").length) {
         multipleLights = true;
-    }
+    };
 
     $('.sidenav').sidenav();
+
     $('.tabs').tabs();
 
     $('input[type="checkbox"]').change(function () {
@@ -160,7 +176,6 @@ $(function () {
             decimals: 0,
         })
     });
-
 
     slider.noUiSlider.on('start', function () {
         refreshIntervalId = clearInterval(refreshIntervalId);

@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Hue Light</title>
+    <title>" + String(lightName) + " - DiyHue</title>
+    <link rel="icon" type="image/png" href="https://diyhue.org/wp-content/uploads/2019/11/cropped-Zeichenfl%C3%A4che-4-1-32x32.png" sizes="32x32">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <link rel="stylesheet" href="https://cerny.in/nouislider.css" />
@@ -22,9 +23,10 @@
             </div>
             <div class="nav-content">
                 <ul class="tabs tabs-transparent">
-                    <li class="tab" title="tab1"><a class="active" href="#tab1">Home</a></li>
-                    <li class="tab" title="tab2"><a href="#tab2">Preferences</a></li>
-                    <li class="tab" title="tab3"><a href="#tab3">Network settings</a></li>
+                    <li class="tab" title="#home"><a class="active" href="#home">Home</a></li>
+                    <li class="tab" title="#preferences"><a href="#preferences">Preferences</a></li>
+                    <li class="tab" title="#network"><a href="#network">Network settings</a></li>
+                    <li class="tab" title="/update"><a href="/update">Updater</a></li>
                 </ul>
             </div>
         </nav>
@@ -37,7 +39,7 @@
 
         <div class="container">
             <div class="section">
-                <div id="tab1" class="col s12">
+                <div id="home" class="col s12">
                     <form>
                         <input type="hidden" name="section" value="1">
                         <div class="row">
@@ -78,7 +80,7 @@
                     </form>
                 </div>
 
-                <div id="tab2" class="col s12">
+                <div id="preferences" class="col s12">
                     <form method="POST" action="/">
                         <input type="hidden" name="section" value="1">
                         <div class="row">
@@ -127,7 +129,10 @@
                                 <input type="number" id="lightscount" name="lightscount">
                             </div>
                         </div>
-                        <label for="rpct" class="form-label">Divided lights</label>
+                        <label class="form-label">Light division</label>
+                        </br>
+                        <label>Available Pixels:</label>
+                        <label class="availablepixels"><b>null</b></label>
                         <div class="row dividedLights">
                         </div>
                         <div class="row">
@@ -191,7 +196,7 @@
                     </form>
                 </div>
 
-                <div id="tab3" class="col s12">
+                <div id="network" class="col s12">
                     <form method="POST" action="/">
                         <input type="hidden" name="section" value="2">
                         <div class="row">
