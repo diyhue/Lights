@@ -1,9 +1,10 @@
 var slider;
-var refreshInterval = 3000;
+var refreshInterval = 1500;
 var multipleLights = false;
 var lightscount = 0;
 var pixelcount = 0;
 let availablepixels = 0;
+var InitReload = false;
 
 function postData(t) {
     var e = new XMLHttpRequest;
@@ -56,6 +57,8 @@ function updateStatus() {
             }
             $("#pow").prop("checked", data.on);
             slider.noUiSlider.set(data.bri / 2.54);
+            if (InitReload)
+                location.reload();
             console.log('update state done');
         },
         error: function () {
@@ -86,17 +89,24 @@ function updateConfig() {
                 $('select').formSelect();
             });
 
+            var newDividedLight = lightscount;
+            var newDividedLights = false;
             for (var n = 0; n < lightscount; n++) {
                 var dividedLightElement;
                 if (!json["dividedLight_" + n]) {
-                    dividedLightElement = $('<div class="col s4 m3"><input type="number" id="dividedLight_' + n + '" class="dividedLight" data-skin="round" name="dividedLight_' + n + '" value="0"/></div>');
+                    dividedLightElement = $('<div class="col s4 m3"><input type="number" id="dividedLight_' + n + '" class="dividedLight" data-skin="round" name="dividedLight_' + n + '" value="' + Math.floor(availablepixels / newDividedLight) + '"/></div>');
+                    newDividedLights = true;
                 }
                 else {
+                    newDividedLight -= 1;
                     dividedLightElement = $('<div class="col s4 m3"><input type="number" id="dividedLight_' + n + '" class="dividedLight" data-skin="round" name="dividedLight_' + n + '" value="' + json["dividedLight_" + n] + '"/></div>');
                 }
                 availablepixels -= parseInt(json["dividedLight_" + n]);
                 $(".dividedLights").append(dividedLightElement);
             }
+
+            if (newDividedLights)
+                availablepixels = 'Please first adjust the pixels of the newly added lamps and confirm.'
 
             $(".availablepixels").html("<b>" + availablepixels + "<b>");
 
@@ -166,10 +176,7 @@ $(function () {
             data: form.serialize(), // serializes the form's elements.
             success: function (data) {
                 M.toast({ html: 'Succesful! Rebooting.', classes: 'teal lighten-2' });
-                setTimeout(
-                    function () {
-                        location.reload()
-                    }, 1500);
+                InitReload = true;
             },
             error: function (data) {
                 M.toast({ html: 'Error occured while sending data. Try again.', classes: 'red lighten-2' });
