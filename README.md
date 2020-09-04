@@ -6,7 +6,7 @@ Steps to Follow:
 - Select the correct Sketch according to your Harware Setup (e.g. WS2812b)
 - Upload Firmware to Microcontroller with Arduino IDE (No Changes to Code)
 - Connect Hardware (LEDs) and Powersupply
-- Connect to ESP8266 WiFi (e.g. search for new WiFi on Smartphone) --> `"Hue rgb strip`
+- Connect to ESP8266 WiFi (e.g. search for new WiFi on Smartphone) --> `"Hue rgb strip"`
 - Browse `192.168.4.1` --> Connect ESP8266 to your local WiFi
 - Check and browse local IP of ESP8266
     - Configure Light from WEB UI (Number of Emulated Lights, Total Number of connected LEDs)
