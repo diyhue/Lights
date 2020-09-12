@@ -92,14 +92,21 @@ light:
           transition_length: 5s
           update_interval: 3s
 
-text_sensor:
-  - platform: template
-    name: "light_id"
-    id: light_id
-    lambda: |-
-      return {"esphome_diyhue_light;SUPER-SECRET-MAC;LIGHT-NAME;CT-BOOST;RGB-BOOST"};
-    update_interval: 24h
-    
+          text_sensor:
+            - platform: template
+              name: "light_id"
+              id: light_id
+              lambda: |-
+                char response[100];
+                memset( response, 0, 100 );
+                strcat( response, "esphome_diyhue_light;");
+                strcat( response, WiFi.macAddress().c_str());
+                strcat( response, ";");
+                strcat( response, App.get_name().c_str());
+                strcat( response, ";0;0" ); //";CT-BOOST;RGB-BOOST"
+                return { response };
+              update_interval: 24h
+             
 switch:
   - platform: template
     name: alert
