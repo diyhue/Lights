@@ -97,9 +97,16 @@ text_sensor:
     name: "light_id"
     id: light_id
     lambda: |-
-      return {"esphome_diyhue_light;SUPER-SECRET-MAC;LIGHT-NAME;CT-BOOST;RGB-BOOST"};
+      char response[100];
+      memset( response, 0, 100 );
+      strcat( response, "esphome_diyhue_light;");
+      strcat( response, WiFi.macAddress().c_str());
+      strcat( response, ";");
+      strcat( response, App.get_name().c_str());
+      strcat( response, ";0;0" ); // ;CT_BOOST;RGB_BOOST values go here
+      return { response };
     update_interval: 24h
-    
+             
 switch:
   - platform: template
     name: alert
