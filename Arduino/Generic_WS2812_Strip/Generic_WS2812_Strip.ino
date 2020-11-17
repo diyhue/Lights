@@ -898,10 +898,10 @@ void entertainment() {
     }
     lastEPMillis = millis();
     Udp.read(packetBuffer, packetSize);
-    for (uint8_t i = 0; i < packetSize / 4; i++) {
-      lights[packetBuffer[i * 4]].currentColors[0] = packetBuffer[i * 4 + 1];
-      lights[packetBuffer[i * 4]].currentColors[1] = packetBuffer[i * 4 + 2];
-      lights[packetBuffer[i * 4]].currentColors[2] = packetBuffer[i * 4 + 3];
+    for (uint8_t i = 0; i < packetSize / 4; i++) {     
+      lights[packetBuffer[i * 4]].currentColors[0] = packetBuffer[i * 4 + 1] * rgb_multiplier[0] / 100;
+      lights[packetBuffer[i * 4]].currentColors[1] = packetBuffer[i * 4 + 2] * rgb_multiplier[1] / 100;
+      lights[packetBuffer[i * 4]].currentColors[2] = packetBuffer[i * 4 + 3] * rgb_multiplier[2] / 100;
     }
     for (uint8_t light = 0; light < lightsCount; light++) {
       if (lightsCount > 1) {
