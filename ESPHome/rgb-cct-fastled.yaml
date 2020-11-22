@@ -4,6 +4,7 @@ esphome:
   board: esp01_1m
   includes:
     - diyhueasyncudp.h
+    - alertswitch.h
   libraries:
     - git+https://github.com/me-no-dev/ESPAsyncUDP.git#697c75a0255e5dccf91b4ef8b5cc28c569b3bac9
 
@@ -36,7 +37,7 @@ wifi:
   
 # Enable logging
 logger:
-  level: WARN
+  baud_rate: 0
 
 # Enable Home Assistant API
 api:
@@ -108,37 +109,15 @@ text_sensor:
     update_interval: 24h
              
 switch:
-  - platform: template
-    name: alert
-    id: alert
-    optimistic: true
-    turn_on_action:
-      - light.turn_off: color_led
-      - light.turn_on:
-          id: white_led
-          brightness: 100%
-          color_temperature: 4000 K
-      - delay: 1s
-      - light.turn_on:
-          id: white_led
-          brightness: 10%
-          color_temperature: 4000 K
-      - delay: 1s
-      - light.turn_on:
-          id: white_led
-          brightness: 100%
-          color_temperature: 4000 K
-      - delay: 1s
-      - light.turn_on:
-          id: white_led
-          brightness: 10%
-          color_temperature: 4000 K
-      - delay: 1s
-      - light.turn_on:
-          id: white_led
-          brightness: 100%
-          color_temperature: 4000 K
-      - switch.turn_off: alert
+  - platform: custom
+    lambda: |-
+        auto alertswitch = new alertSwitch();
+        App.register_component(alertswitch);
+        return {alertswitch};
+    switches:
+      name: alert
+      id: alert
+
   - platform: template
     name: entertainment_switch
     id: entertainment_switch
