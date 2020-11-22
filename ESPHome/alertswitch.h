@@ -19,11 +19,6 @@ class alertSwitch : public Component, public Switch {
         light::LightCall call = (color_led_on) ? color_led->make_call() : call = white_led->make_call();
         if (phase == 1) {
           call.set_brightness(0.01);
-          String response = String("esphome_diyhue_light;" + 
-          WiFi.macAddress().c_str() + ";" +
-          App.get_name().c_str() + ";" +
-          "CT_BOOST" + ";" + //CT_BOOST, 0 to disable
-          "RGB_BOOST" + ";"); //RGB_BOOST, 0 to disable
         } else if (phase == 2) {
           call.set_brightness(1.0);
         } else {// phase is 3
