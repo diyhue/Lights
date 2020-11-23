@@ -2,11 +2,11 @@
 
 class alertSwitch : public Component, public Switch {
  public:
-  static unsigned long lastTime;
-  static int phase;
-  static float stored_brightness;
-  static bool color_led_on;
-  static bool white_led_on;
+  unsigned long lastTime = 0;
+  int phase = 0;
+  float stored_brightness = 0;
+  bool color_led_on = false;
+  bool white_led_on = false;
 
   void setup() override {}
   void loop() override {
@@ -59,9 +59,3 @@ class alertSwitch : public Component, public Switch {
     }
   }
 };
-
-unsigned long alertSwitch::lastTime = 0;
-int alertSwitch::phase = 0;
-float alertSwitch::stored_brightness = 0.0f;
-bool alertSwitch::color_led_on = false;
-bool alertSwitch::white_led_on = false;
