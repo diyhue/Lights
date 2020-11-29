@@ -373,7 +373,7 @@ void setup() {
       lightEngine();
     }
   }
-
+  WiFi.mode(WIFI_STA);
   WiFiManager wifiManager;
   wifiManager.autoConnect("New Hue Light");
 
