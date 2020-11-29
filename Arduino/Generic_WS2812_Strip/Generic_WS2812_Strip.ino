@@ -644,6 +644,7 @@ void setup() {
       lightEngine();
     }
   }
+  WiFi.mode(WIFI_STA);
   WiFiManager wifiManager;
 
   if (!useDhcp) {
