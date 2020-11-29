@@ -124,7 +124,8 @@ void setup() {
     }
 
   }
-
+  
+  WiFi.mode(WIFI_STA);
   WiFiManager wifiManager;
 
   wifiManager.setConfigPortalTimeout(120);
