@@ -134,7 +134,7 @@ void setup() {
   } else {
     ////Serial.println("Config loaded");
   }
-
+  WiFi.mode(WIFI_STA);
   WiFiManager wifiManager;
 
   if (!useDhcp) {
