@@ -21,7 +21,7 @@ More Information is available in our [documentation](https://diyhue.readthedocs.
 The following is a set of guidelines for contributing to diyHue Lights. These are mostly guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request.
 
 ### Building with travis
-In order for your sketch to be built with travis, please upload only the `sketch.ino` file in a folder within the Arduino dir. Please make sure that the folder and sketch name are exactly the same, ignoring the extension. For example the sketch would be saved in `Lights/Arudino/Generic_Fun_Light/` and called `Generic_Fun_Light.ino`.
+In order for your sketch to be built with travis, please upload only the `sketch.ino` file in a folder within the Arduino dir. Please make sure that the folder and sketch name are exactly the same, ignoring the extension. For example the sketch would be saved in `Lights/Arduino/Generic_Fun_Light/` and called `Generic_Fun_Light.ino`.
 
 Also within you PR, please create a commit to `.travis.yml`, adding a line in the matrix section. This should be in the format `- SKETCH="YOUR_SKETCH_NAME_HERE"`. Following the above example, `.travis.yml` would look like:
 
