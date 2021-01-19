@@ -37,7 +37,7 @@ uint8_t rgb_multiplier[] = {100, 100, 100}; // light multiplier in percentage /R
 uint8_t lightsCount = 3;
 uint16_t dividedLightsArray[30];
 
-uint16_t pixelCount = 60, lightLedsCount;
+uint16_t pixelCount = 60;
 uint8_t transitionLeds = 6; // pixelCount must be divisible by this value
 
 ESP8266WebServer server(80);
@@ -52,7 +52,7 @@ RgbColor black = RgbColor(0);
 NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod>* strip = NULL;
 //NeoPixelBus<NeoBrgFeature, Neo800KbpsMethod>* strip = NULL; // WS2811
 
-void convertHue(uint8_t light)
+void convertHue(uint8_t light) // convert hue / sat values from HUE API to RGB
 {
   double      hh, p, q, t, ff, s, v;
   long        i;
@@ -112,7 +112,7 @@ void convertHue(uint8_t light)
 
 }
 
-void convertXy(uint8_t light)
+void convertXy(uint8_t light) // convert CIE xy values from HUE API to RGB
 {
   int optimal_bri = lights[light].bri;
   if (optimal_bri < 5) {
@@ -170,7 +170,8 @@ void convertXy(uint8_t light)
   lights[light].colors[0] = (int) (r * optimal_bri); lights[light].colors[1] = (int) (g * optimal_bri); lights[light].colors[2] = (int) (b * optimal_bri);
 }
 
-void convertCt(uint8_t light) {
+void convertCt(uint8_t light) // convert ct (color temperature) value from HUE API to RGB
+{
   int hectemp = 10000 / lights[light].ct;
   int r, g, b;
   if (hectemp <= 66) {
@@ -195,7 +196,7 @@ void convertCt(uint8_t light) {
   lights[light].colors[0] = r * (lights[light].bri / 255.0f); lights[light].colors[1] = g * (lights[light].bri / 255.0f); lights[light].colors[2] = b * (lights[light].bri / 255.0f);
 }
 
-void handleNotFound() {
+void handleNotFound() { // default webserver response for unknow requests
   String message = "File Not Found\n\n";
   message += "URI: ";
   message += server.uri();
@@ -210,7 +211,7 @@ void handleNotFound() {
   server.send(404, "text/plain", message);
 }
 
-void infoLight(RgbColor color) {
+void infoLight(RgbColor color) { // boot animation for leds count and wifi test
   // Flash the strip in the selected color. White = booted, green = WLAN connected, red = WLAN could not connect
   for (int i = 0; i < pixelCount; i++)
   {
@@ -223,7 +224,7 @@ void infoLight(RgbColor color) {
 }
 
 
-void apply_scene(uint8_t new_scene) {
+void apply_scene(uint8_t new_scene) { // these are internal scenes store in light firmware that can be applied on boot and manually from light web interface
   for (uint8_t light = 0; light < lightsCount; light++) {
     if ( new_scene == 1) {
       lights[light].bri = 254; lights[light].ct = 346; lights[light].colorMode = 2; convertCt(light);
@@ -251,8 +252,8 @@ void apply_scene(uint8_t new_scene) {
   }
 }
 
-void processLightdata(uint8_t light, float transitiontime) {
-  transitiontime *= 17 - (pixelCount / 40); //every extra led add a small delay that need to be counted
+void processLightdata(uint8_t light, float transitiontime) { // calculate the step level of every RGB channel for a smooth transition in requested transition time
+  transitiontime *= 17 - (pixelCount / 40); //every extra led add a small delay that need to be counted for transition time match 
   if (lights[light].colorMode == 1 && lights[light].lightState == true) {
     convertXy(light);
   } else if (lights[light].colorMode == 2 && lights[light].lightState == true) {
@@ -269,7 +270,7 @@ void processLightdata(uint8_t light, float transitiontime) {
   }
 }
 
-RgbColor blending(float left[3], float right[3], uint8_t pixel) {
+RgbColor blending(float left[3], float right[3], uint8_t pixel) { // return RgbColor based on neighbour leds
   uint8_t result[3];
   for (uint8_t i = 0; i < 3; i++) {
     float percent = (float) pixel / (float) (transitionLeds + 1);
@@ -278,37 +279,33 @@ RgbColor blending(float left[3], float right[3], uint8_t pixel) {
   return RgbColor((uint8_t)result[0], (uint8_t)result[1], (uint8_t)result[2]);
 }
 
-RgbColor convInt(float color[3]) {
-  return RgbColor((uint8_t)color[0], (uint8_t)color[1], (uint8_t)color[2]);
-}
-
-RgbColor convFloat(float color[3]) {
+RgbColor convFloat(float color[3]) { // return RgbColor from float
   return RgbColor((uint8_t)color[0], (uint8_t)color[1], (uint8_t)color[2]);
 }
 
 
-void lightEngine() {
-  for (int light = 0; light < lightsCount; light++) {
-    if (lights[light].lightState) {
-      if (lights[light].colors[0] != lights[light].currentColors[0] || lights[light].colors[1] != lights[light].currentColors[1] || lights[light].colors[2] != lights[light].currentColors[2]) {
+void lightEngine() {  // core function executed in loop()
+  for (int light = 0; light < lightsCount; light++) { // loop with every virtual light
+    if (lights[light].lightState) { // if light in on
+      if (lights[light].colors[0] != lights[light].currentColors[0] || lights[light].colors[1] != lights[light].currentColors[1] || lights[light].colors[2] != lights[light].currentColors[2]) { // if not all RGB channels of the light are at desired level
         inTransition = true;
-        for (uint8_t k = 0; k < 3; k++) {
-          if (lights[light].colors[k] != lights[light].currentColors[k]) lights[light].currentColors[k] += lights[light].stepLevel[k];
-          if ((lights[light].stepLevel[k] > 0.0 && lights[light].currentColors[k] > lights[light].colors[k]) || (lights[light].stepLevel[k] < 0.0 && lights[light].currentColors[k] < lights[light].colors[k])) lights[light].currentColors[k] = lights[light].colors[k];
+        for (uint8_t k = 0; k < 3; k++) { // loop with every RGB channel of the light
+          if (lights[light].colors[k] != lights[light].currentColors[k]) lights[light].currentColors[k] += lights[light].stepLevel[k]; // move RGB channel on step closer to desired level
+          if ((lights[light].stepLevel[k] > 0.0 && lights[light].currentColors[k] > lights[light].colors[k]) || (lights[light].stepLevel[k] < 0.0 && lights[light].currentColors[k] < lights[light].colors[k])) lights[light].currentColors[k] = lights[light].colors[k]; // if the current level go below desired level apply directly the desired level.
         }
-        if (lightsCount > 1) {
-          if (light == 0) {
-            for (int pixel = 0; pixel < dividedLightsArray[0]; pixel++)
+        if (lightsCount > 1) { // if are more then 1 virtual light we need to apply transition leds (set in the web interface)
+          if (light == 0) { // if is the first light we must not have transition leds at the beginning 
+            for (int pixel = 0; pixel < dividedLightsArray[0]; pixel++) // loop with all leds of the light (declared in web interface)
             {
-              if (pixel < dividedLightsArray[0] - transitionLeds / 2) {
+              if (pixel < dividedLightsArray[0] - transitionLeds / 2) { // apply raw color if we are outside transition leds
                 strip->SetPixelColor(pixel, convFloat(lights[light].currentColors));
               } else {
-                strip->SetPixelColor(pixel, blending(lights[0].currentColors, lights[1].currentColors, pixel + 1 - (dividedLightsArray[0] - transitionLeds / 2 )));
+                strip->SetPixelColor(pixel, blending(lights[0].currentColors, lights[1].currentColors, pixel + 1 - (dividedLightsArray[0] - transitionLeds / 2 ))); // calculate the transition led color 
               }
             }
           }
-          else {
-            for (int pixel = 0; pixel < dividedLightsArray[light]; pixel++)
+          else { // is not the first virtual light
+            for (int pixel = 0; pixel < dividedLightsArray[light]; pixel++) // loop with all leds of the light 
             {
               long pixelSum;
               for (int value = 0; value < light; value++)
@@ -321,44 +318,44 @@ void lightEngine() {
                 }
               }
 
-              if (pixel < transitionLeds / 2) {
+              if (pixel < transitionLeds / 2) { // beginning transition leds
                 strip->SetPixelColor(pixel + pixelSum + transitionLeds, blending( lights[light - 1].currentColors, lights[light].currentColors, pixel + 1));
               }
-              else if (pixel > dividedLightsArray[light] - transitionLeds / 2 - 1) {
+              else if (pixel > dividedLightsArray[light] - transitionLeds / 2 - 1) {  // end of transition leds
                 //Serial.println(String(pixel));
                 strip->SetPixelColor(pixel + pixelSum + transitionLeds, blending( lights[light].currentColors, lights[light + 1].currentColors, pixel + transitionLeds / 2 - dividedLightsArray[light]));
               }
-              else  {
+              else  { // outside transition leds (apply raw color)
                 strip->SetPixelColor(pixel + pixelSum + transitionLeds, convFloat(lights[light].currentColors));
               }
               pixelSum = 0;
             }
           }
-        } else {
+        } else { // strip has only one virtual light so apply raw color to entire strip
           strip->ClearTo(convFloat(lights[light].currentColors), 0, pixelCount - 1);
         }
-        strip->Show();
+        strip->Show(); //show what was calculated previously 
       }
-    } else {
-      if (lights[light].currentColors[0] != 0 || lights[light].currentColors[1] != 0 || lights[light].currentColors[2] != 0) {
+    } else { // if light in off, calculate the dimming effect only
+      if (lights[light].currentColors[0] != 0 || lights[light].currentColors[1] != 0 || lights[light].currentColors[2] != 0) { // proceed forward only in case not all RGB channels are zero
         inTransition = true;
-        for (uint8_t k = 0; k < 3; k++) {
-          if (lights[light].currentColors[k] != 0) lights[light].currentColors[k] -= lights[light].stepLevel[k];
-          if (lights[light].currentColors[k] < 0) lights[light].currentColors[k] = 0;
+        for (uint8_t k = 0; k < 3; k++) { //loop with every RGB channel
+          if (lights[light].currentColors[k] != 0) lights[light].currentColors[k] -= lights[light].stepLevel[k]; // remove one step level
+          if (lights[light].currentColors[k] < 0) lights[light].currentColors[k] = 0; // save condition, if level go below zero set it to zero
         }
-        if (lightsCount > 1) {
-          if (light == 0) {
-            for (int pixel = 0; pixel < dividedLightsArray[0]; pixel++)
+        if (lightsCount > 1) { // if the strip has more than one light
+          if (light == 0) { // if is the first light of the strip
+            for (int pixel = 0; pixel < dividedLightsArray[0]; pixel++) // loop with every led of the virtual light
             {
-              if (pixel < dividedLightsArray[0] - transitionLeds / 2) {
+              if (pixel < dividedLightsArray[0] - transitionLeds / 2) { // leds until transition zone apply raw color
                 strip->SetPixelColor(pixel, convFloat(lights[light].currentColors));
-              } else {
+              } else { // leds in transition zone apply the transition color
                 strip->SetPixelColor(pixel, blending(lights[0].currentColors, lights[1].currentColors, pixel + 1 - (dividedLightsArray[0] - transitionLeds / 2 )));
               }
             }
           }
-          else {
-            for (int pixel = 0; pixel < dividedLightsArray[light]; pixel++)
+          else { // is not the first light
+            for (int pixel = 0; pixel < dividedLightsArray[light]; pixel++) // loop with every led
             {
               long pixelSum;
               for (int value = 0; value < light; value++)
@@ -371,43 +368,41 @@ void lightEngine() {
                 }
               }
 
-              if (pixel < transitionLeds / 2) {
+              if (pixel < transitionLeds / 2) { // leds in beginning of transition zone must apply blending
                 strip->SetPixelColor(pixel + pixelSum + transitionLeds, blending( lights[light - 1].currentColors, lights[light].currentColors, pixel + 1));
               }
-              else if (pixel > dividedLightsArray[light] - transitionLeds / 2 - 1) {
+              else if (pixel > dividedLightsArray[light] - transitionLeds / 2 - 1) { // leds in the end of transition zone must apply blending
                 //Serial.println(String(pixel));
                 strip->SetPixelColor(pixel + pixelSum + transitionLeds, blending( lights[light].currentColors, lights[light + 1].currentColors, pixel + transitionLeds / 2 - dividedLightsArray[light]));
               }
-              else  {
+              else  { // leds outside transition zone apply raw color
                 strip->SetPixelColor(pixel + pixelSum + transitionLeds, convFloat(lights[light].currentColors));
               }
               pixelSum = 0;
             }
           }
-        } else {
+        } else { // is just one virtual light declared, apply raw color to all leds
           strip->ClearTo(convFloat(lights[light].currentColors), 0, pixelCount - 1);
         }
         strip->Show();
       }
     }
   }
-  if (inTransition) {
+  if (inTransition) { // wait 6ms for a nice transition effect
     delay(6);
-    inTransition = false;
-  } else if (hwSwitch == true) {
-    if (digitalRead(onPin) == HIGH) {
+    inTransition = false; // set inTransition bash to false (will be set bach to true on next level execution if desired state is not reached)
+  } else if (hwSwitch == true) { // if you want to use some GPIO's for on/off and brightness controll
+    if (digitalRead(onPin) == HIGH) { // on button pressed
       int i = 0;
-      while (digitalRead(onPin) == HIGH && i < 30) {
+      while (digitalRead(onPin) == HIGH && i < 30) { // count how log is the button pressed
         delay(20);
         i++;
       }
       for (int light = 0; light < lightsCount; light++) {
-        if (i < 30) {
-          // there was a short press
+        if (i < 30) { // there was a short press
           lights[light].lightState = true;
         }
-        else {
-          // there was a long press
+        else { // there was a long press
           lights[light].bri += 56;
           if (lights[light].bri > 255) {
             // don't increase the brightness more then maximum value
@@ -415,7 +410,7 @@ void lightEngine() {
           }
         }
       }
-    } else if (digitalRead(offPin) == HIGH) {
+    } else if (digitalRead(offPin) == HIGH) { // off button pressed
       int i = 0;
       while (digitalRead(offPin) == HIGH && i < 30) {
         delay(20);
@@ -439,7 +434,7 @@ void lightEngine() {
   }
 }
 
-void saveState() {
+void saveState() { // save the lights state on SPIFFS partition in JSON format
   DynamicJsonDocument json(1024);
   for (uint8_t i = 0; i < lightsCount; i++) {
     JsonObject light = json.createNestedObject((String)i);
@@ -460,7 +455,7 @@ void saveState() {
 
 }
 
-void restoreState() {
+void restoreState() { // restore the lights state from SPIFFS partition
   File stateFile = SPIFFS.open("/state.json", "r");
   if (!stateFile) {
     saveState();
@@ -500,7 +495,7 @@ void restoreState() {
 }
 
 
-bool saveConfig() {
+bool saveConfig() { // save config in SPIFFS partition in JSON file
   DynamicJsonDocument json(1024);
   json["name"] = lightName;
   json["startup"] = startup;
@@ -543,7 +538,7 @@ bool saveConfig() {
   return true;
 }
 
-bool loadConfig() {
+bool loadConfig() { // load the configuration from SPIFFS partition
   File configFile = SPIFFS.open("/config.json", "r");
   if (!configFile) {
     //Serial.println("Create new file with default values");
@@ -592,7 +587,7 @@ bool loadConfig() {
   return true;
 }
 
-void ChangeNeoPixels(uint16_t newCount)
+void ChangeNeoPixels(uint16_t newCount) // this set the number of leds of the strip based on web configuration
 {
   if (strip != NULL) {
     delete strip; // delete the previous dynamically created strip
@@ -622,7 +617,6 @@ void setup() {
 
   dividedLightsArray[lightsCount];
 
-  lightLedsCount = pixelCount / lightsCount;
 
   ChangeNeoPixels(pixelCount);
 
@@ -645,13 +639,13 @@ void setup() {
     }
   }
   WiFi.mode(WIFI_STA);
-  WiFiManager wifiManager;
+  WiFiManager wifiManager; // wifimanager will start the configuration SSID if wifi connection is not succesfully 
 
   if (!useDhcp) {
     wifiManager.setSTAStaticIPConfig(address, gateway, submask);
   }
 
-  if (!wifiManager.autoConnect(lightName)) {
+  if (!wifiManager.autoConnect(lightName)) { // light was not connected to wifi and not configured so reset.
     delay(3000);
     ESP.reset();
     delay(5000);
@@ -664,14 +658,14 @@ void setup() {
   }
 
 
-  if (! lights[0].lightState) {
-    infoLight(white);
-    while (WiFi.status() != WL_CONNECTED) {
-      infoLight(red);
+  if (! lights[0].lightState) { // test if light zero (must be at last one light) is not set to ON
+    infoLight(white); // play white anymation
+    while (WiFi.status() != WL_CONNECTED) { // connection to wifi still not ready
+      infoLight(red); // play red animation
       delay(500);
     }
     // Show that we are connected
-    infoLight(green);
+    infoLight(green); // connected, play green animation
 
   }
 
@@ -681,16 +675,16 @@ void setup() {
   WiFi.hostname("hue-" + hostname);
   WiFi.macAddress(mac);
 
-  httpUpdateServer.setup(&server);
+  httpUpdateServer.setup(&server); // start http server
 
-  Udp.begin(2100);
+  Udp.begin(2100); // start entertainment UDP server
 
-  if (hwSwitch == true) {
+  if (hwSwitch == true) { // set buttons pins mode in case are used
     pinMode(onPin, INPUT);
     pinMode(offPin, INPUT);
   }
 
-  server.on("/state", HTTP_PUT, []() {
+  server.on("/state", HTTP_PUT, []() { // HTTP PUT request used to set a new light state
     bool stateSave = false;
     DynamicJsonDocument root(1024);
     DeserializationError error = deserializeJson(root, server.arg("plain"));
@@ -765,7 +759,7 @@ void setup() {
     }
   });
 
-  server.on("/state", HTTP_GET, []() {
+  server.on("/state", HTTP_GET, []() { // HTTP GET request used to fetch current light state
     uint8_t light = server.arg("light").toInt() - 1;
     DynamicJsonDocument root(1024);
     root["on"] = lights[light].lightState;
@@ -787,7 +781,7 @@ void setup() {
     server.send(200, "text/plain", output);
   });
 
-  server.on("/detect", []() {
+  server.on("/detect", []() { // HTTP GET request used to discover the light type
     char macString[32] = {0};
     sprintf(macString, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     DynamicJsonDocument root(1024);
@@ -803,7 +797,7 @@ void setup() {
     server.send(200, "text/plain", output);
   });
 
-  server.on("/config", []() {
+  server.on("/config", []() { // used by light web interface to get current configuration 
     DynamicJsonDocument root(1024);
     root["name"] = lightName;
     root["scene"] = scene;
@@ -830,7 +824,7 @@ void setup() {
     server.send(200, "text/plain", output);
   });
 
-  server.on("/", []() {
+  server.on("/", []() { // light http web interface
     if (server.arg("section").toInt() == 1) {
       server.arg("name").toCharArray(lightName, LIGHT_NAME_MAX_LENGTH);
       startup = server.arg("startup").toInt();
@@ -870,7 +864,7 @@ void setup() {
 
   });
 
-  server.on("/reset", []() {
+  server.on("/reset", []() { // trigger manual reset
     server.send(200, "text/html", "reset");
     delay(1000);
     ESP.restart();
@@ -891,26 +885,26 @@ RgbColor blendingEntert(float left[3], float right[3], float pixel) {
   return RgbColor((uint8_t)result[0], (uint8_t)result[1], (uint8_t)result[2]);
 }
 
-void entertainment() {
-  uint8_t packetSize = Udp.parsePacket();
-  if (packetSize) {
-    if (!entertainmentRun) {
+void entertainment() { // entertainment function
+  uint8_t packetSize = Udp.parsePacket(); // check if UDP received some bytes
+  if (packetSize) { // if nr of bytes is more than zero
+    if (!entertainmentRun) { // announce entertainment is running
       entertainmentRun = true;
     }
-    lastEPMillis = millis();
+    lastEPMillis = millis(); // update variable with last received package timestamp
     Udp.read(packetBuffer, packetSize);
-    for (uint8_t i = 0; i < packetSize / 4; i++) {     
+    for (uint8_t i = 0; i < packetSize / 4; i++) { // loop with every light. There are 4 bytes for every light (light number, red, green, blue)
       lights[packetBuffer[i * 4]].currentColors[0] = packetBuffer[i * 4 + 1] * rgb_multiplier[0] / 100;
       lights[packetBuffer[i * 4]].currentColors[1] = packetBuffer[i * 4 + 2] * rgb_multiplier[1] / 100;
       lights[packetBuffer[i * 4]].currentColors[2] = packetBuffer[i * 4 + 3] * rgb_multiplier[2] / 100;
     }
-    for (uint8_t light = 0; light < lightsCount; light++) {
+    for (uint8_t light = 0; light < lightsCount; light++) { 
       if (lightsCount > 1) {
         if (light == 0) {
           for (int pixel = 0; pixel < dividedLightsArray[0]; pixel++)
           {
             if (pixel < dividedLightsArray[0] - transitionLeds / 2) {
-              strip->SetPixelColor(pixel, convInt(lights[light].currentColors));
+              strip->SetPixelColor(pixel, convFloat(lights[light].currentColors));
             } else {
               strip->SetPixelColor(pixel, blendingEntert(lights[0].currentColors, lights[1].currentColors, pixel + 1 - (dividedLightsArray[0] - transitionLeds / 2 )));
             }
@@ -937,13 +931,13 @@ void entertainment() {
               strip->SetPixelColor(pixel + pixelSum + transitionLeds, blendingEntert( lights[light].currentColors, lights[light + 1].currentColors, pixel + transitionLeds / 2 - dividedLightsArray[light]));
             }
             else  {
-              strip->SetPixelColor(pixel + pixelSum + transitionLeds, convInt(lights[light].currentColors));
+              strip->SetPixelColor(pixel + pixelSum + transitionLeds, convFloat(lights[light].currentColors));
             }
             pixelSum = 0;
           }
         }
       } else {
-        strip->ClearTo(convInt(lights[light].currentColors), 0, pixelCount - 1);
+        strip->ClearTo(convFloat(lights[light].currentColors), 0, pixelCount - 1);
       }
     }
     strip->Show();
@@ -953,14 +947,14 @@ void entertainment() {
 void loop() {
   server.handleClient();
   if (!entertainmentRun) {
-    lightEngine();
+    lightEngine(); // process lights data set on http server
   } else {
-    if ((millis() - lastEPMillis) >= ENTERTAINMENT_TIMEOUT) {
+    if ((millis() - lastEPMillis) >= ENTERTAINMENT_TIMEOUT) { // entertainment stream stop (timeout)
       entertainmentRun = false;
       for (uint8_t i = 0; i < lightsCount; i++) {
         processLightdata(i, 4); //return to original colors with 0.4 sec transition
       }
     }
   }
-  entertainment();
+  entertainment(); // process entertainment data on UDP server
 }
