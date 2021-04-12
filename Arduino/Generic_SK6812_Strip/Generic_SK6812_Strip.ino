@@ -36,8 +36,10 @@ uint8_t scene, startup, onPin = 4, offPin = 5;
 bool hwSwitch = false;
 
 uint8_t lightsCount = 3;
-uint16_t pixelCount = 60, lightLedsCount;
-uint8_t transitionLeds = 6; // must be even number
+
+uint16_t dividedLightsArray[30];
+uint16_t pixelCount = 60;
+uint8_t transitionLeds = 6; // pixelCount must be divisible by this value
 
 
 
@@ -274,38 +276,48 @@ void lightEngine() {
           if (lights[light].colors[k] != lights[light].currentColors[k]) lights[light].currentColors[k] += lights[light].stepLevel[k];
           if ((lights[light].stepLevel[k] > 0.0 && lights[light].currentColors[k] > lights[light].colors[k]) || (lights[light].stepLevel[k] < 0.0 && lights[light].currentColors[k] < lights[light].colors[k])) lights[light].currentColors[k] = lights[light].colors[k];
         }
-        if (lightsCount > 1) {
-          if (light == 0) {
-            for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds / 2; pixel++) {
-              if (pixel < lightLedsCount - transitionLeds / 2) {
+        if (lightsCount > 1) { // if are more then 1 virtual light we need to apply transition leds (set in the web interface)
+          if (light == 0) { // if is the first light we must not have transition leds at the beginning 
+            for (int pixel = 0; pixel < dividedLightsArray[0]; pixel++) // loop with all leds of the light (declared in web interface)
+            {
+              if (pixel < dividedLightsArray[0] - transitionLeds / 2) { // apply raw color if we are outside transition leds
                 strip->SetPixelColor(pixel, convFloat(lights[light].currentColors));
               } else {
-                strip->SetPixelColor(pixel, blending(lights[0].currentColors, lights[1].currentColors, pixel + 1 - (lightLedsCount - transitionLeds / 2 )));
-              }
-            }
-          } else if (light == lightsCount - 1) {
-            for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds / 2 ; pixel++) {
-              if (pixel < transitionLeds) {
-                strip->SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light, blending( lights[light - 1].currentColors, lights[light].currentColors, pixel + 1));
-              } else {
-                strip->SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light, convFloat(lights[light].currentColors));
-              }
-            }
-          } else {
-            for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds; pixel++) {
-              if (pixel < transitionLeds) {
-                strip->SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light,  blending( lights[light - 1].currentColors, lights[light].currentColors, pixel + 1));
-              } else if (pixel > lightLedsCount - 1) {
-                strip->SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light,  blending( lights[light].currentColors, lights[light + 1].currentColors, pixel + 1 - lightLedsCount));
-              } else  {
-                strip->SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light, convFloat(lights[light].currentColors));
+                strip->SetPixelColor(pixel, blending(lights[0].currentColors, lights[1].currentColors, pixel + 1 - (dividedLightsArray[0] - transitionLeds / 2 ))); // calculate the transition led color 
               }
             }
           }
-        } else {
+          else { // is not the first virtual light
+            for (int pixel = 0; pixel < dividedLightsArray[light]; pixel++) // loop with all leds of the light 
+            {
+              long pixelSum;
+              for (int value = 0; value < light; value++)
+              {
+                if (value + 1 == light) {
+                  pixelSum += dividedLightsArray[value] - transitionLeds;
+                }
+                else {
+                  pixelSum += dividedLightsArray[value];
+                }
+              }
+
+              if (pixel < transitionLeds / 2) { // beginning transition leds
+                strip->SetPixelColor(pixel + pixelSum + transitionLeds, blending( lights[light - 1].currentColors, lights[light].currentColors, pixel + 1));
+              }
+              else if (pixel > dividedLightsArray[light] - transitionLeds / 2 - 1) {  // end of transition leds
+                //Serial.println(String(pixel));
+                strip->SetPixelColor(pixel + pixelSum + transitionLeds, blending( lights[light].currentColors, lights[light + 1].currentColors, pixel + transitionLeds / 2 - dividedLightsArray[light]));
+              }
+              else  { // outside transition leds (apply raw color)
+                strip->SetPixelColor(pixel + pixelSum + transitionLeds, convFloat(lights[light].currentColors));
+              }
+              pixelSum = 0;
+            }
+          }
+        } else { // strip has only one virtual light so apply raw color to entire strip
           strip->ClearTo(convFloat(lights[light].currentColors), 0, pixelCount - 1);
         }
-        strip->Show();
+        strip->Show(); //show what was calculated previously 
       }
     } else {
       if (lights[light].currentColors[0] != 0 || lights[light].currentColors[1] != 0 || lights[light].currentColors[2] != 0  || lights[light].currentColors[3] != 0) {
@@ -314,35 +326,45 @@ void lightEngine() {
           if (lights[light].currentColors[k] != 0) lights[light].currentColors[k] -= lights[light].stepLevel[k];
           if (lights[light].currentColors[k] < 0) lights[light].currentColors[k] = 0;
         }
-        if (lightsCount > 1) {
-          if (light == 0) {
-            for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds / 2; pixel++) {
-              if (pixel < lightLedsCount - transitionLeds / 2) {
+        if (lightsCount > 1) { // if the strip has more than one light
+          if (light == 0) { // if is the first light of the strip
+            for (int pixel = 0; pixel < dividedLightsArray[0]; pixel++) // loop with every led of the virtual light
+            {
+              if (pixel < dividedLightsArray[0] - transitionLeds / 2) { // leds until transition zone apply raw color
                 strip->SetPixelColor(pixel, convFloat(lights[light].currentColors));
-              } else {
-                strip->SetPixelColor(pixel,  blending( lights[light].currentColors, lights[light + 1].currentColors, pixel + 1 - (lightLedsCount - transitionLeds / 2 )));
-              }
-            }
-          } else if (light == lightsCount - 1) {
-            for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds / 2 ; pixel++) {
-              if (pixel < transitionLeds) {
-                strip->SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light,  blending( lights[light - 1].currentColors, lights[light].currentColors, pixel + 1));
-              } else {
-                strip->SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light, convFloat(lights[light].currentColors));
-              }
-            }
-          } else {
-            for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds; pixel++) {
-              if (pixel < transitionLeds) {
-                strip->SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light,  blending( lights[light - 1].currentColors, lights[light].currentColors, pixel + 1));
-              } else if (pixel > lightLedsCount - 1) {
-                strip->SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light,  blending( lights[light].currentColors, lights[light + 1].currentColors, pixel + 1 - lightLedsCount));
-              } else  {
-                strip->SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light, convFloat(lights[light].currentColors));
+              } else { // leds in transition zone apply the transition color
+                strip->SetPixelColor(pixel, blending(lights[0].currentColors, lights[1].currentColors, pixel + 1 - (dividedLightsArray[0] - transitionLeds / 2 )));
               }
             }
           }
-        } else {
+          else { // is not the first light
+            for (int pixel = 0; pixel < dividedLightsArray[light]; pixel++) // loop with every led
+            {
+              long pixelSum;
+              for (int value = 0; value < light; value++)
+              {
+                if (value + 1 == light) {
+                  pixelSum += dividedLightsArray[value] - transitionLeds;
+                }
+                else {
+                  pixelSum += dividedLightsArray[value];
+                }
+              }
+
+              if (pixel < transitionLeds / 2) { // leds in beginning of transition zone must apply blending
+                strip->SetPixelColor(pixel + pixelSum + transitionLeds, blending( lights[light - 1].currentColors, lights[light].currentColors, pixel + 1));
+              }
+              else if (pixel > dividedLightsArray[light] - transitionLeds / 2 - 1) { // leds in the end of transition zone must apply blending
+                //Serial.println(String(pixel));
+                strip->SetPixelColor(pixel + pixelSum + transitionLeds, blending( lights[light].currentColors, lights[light + 1].currentColors, pixel + transitionLeds / 2 - dividedLightsArray[light]));
+              }
+              else  { // leds outside transition zone apply raw color
+                strip->SetPixelColor(pixel + pixelSum + transitionLeds, convFloat(lights[light].currentColors));
+              }
+              pixelSum = 0;
+            }
+          }
+        } else { // is just one virtual light declared, apply raw color to all leds
           strip->ClearTo(convFloat(lights[light].currentColors), 0, pixelCount - 1);
         }
         strip->Show();
@@ -469,6 +491,9 @@ bool saveConfig() {
   json["hw"] = hwSwitch;
   json["dhcp"] = useDhcp;
   json["lightsCount"] = lightsCount;
+  for (uint16_t i = 0; i < lightsCount; i++) {
+    json["dividedLight_" + String(i)] = dividedLightsArray[i];
+  }
   json["pixelCount"] = pixelCount;
   json["transLeds"] = transitionLeds;
   JsonArray addr = json.createNestedArray("addr");
@@ -522,6 +547,9 @@ bool loadConfig() {
   offPin = (uint8_t) json["off"];
   hwSwitch = json["hw"];
   lightsCount = (uint16_t) json["lightsCount"];
+   for (uint16_t i = 0; i < lightsCount; i++) {
+    dividedLightsArray[i] = (uint16_t) json["dividedLight_" + String(i)];
+  }
   pixelCount = (uint16_t) json["pixelCount"];
   transitionLeds = (uint8_t) json["transLeds"];
   useDhcp = json["dhcp"];
@@ -558,9 +586,9 @@ void setup() {
     ////Serial.println("Config loaded");
   }
 
-  lightLedsCount = pixelCount / lightsCount;
-  ChangeNeoPixels(pixelCount);
+  dividedLightsArray[lightsCount];
 
+  ChangeNeoPixels(pixelCount);
 
   if (startup == 1) {
     for (uint8_t i = 0; i < lightsCount; i++) {
@@ -745,6 +773,9 @@ void setup() {
     root["off"] = offPin;
     root["hwswitch"] = (int)hwSwitch;
     root["lightscount"] = lightsCount;
+      for (uint8_t i = 0; i < lightsCount; i++) {
+      root["dividedLight_" + String(i)] = (int)dividedLightsArray[i];
+    }
     root["pixelcount"] = pixelCount;
     root["transitionleds"] = transitionLeds;
     root["dhcp"] = (int)useDhcp;
@@ -764,6 +795,9 @@ void setup() {
       lightsCount = server.arg("lightscount").toInt();
       pixelCount = server.arg("pixelcount").toInt();
       transitionLeds = server.arg("transitionleds").toInt();
+      for (uint16_t i = 0; i < lightsCount; i++) {
+        dividedLightsArray[i] = server.arg("dividedLight_" + String(i)).toInt();
+      }
       hwSwitch = server.arg("hwswitch").toInt();
       onPin = server.arg("on").toInt();
       offPin = server.arg("off").toInt();
@@ -819,31 +853,46 @@ void entertainment() {
       lights[packetBuffer[i * 4]].currentColors[1] = packetBuffer[i * 4 + 2];
       lights[packetBuffer[i * 4]].currentColors[2] = packetBuffer[i * 4 + 3];
     }
-    for (uint8_t light = 0; light < lightsCount; light++) {
+    for (uint8_t light = 0; light < lightsCount; light++) { 
       if (lightsCount > 1) {
         if (light == 0) {
-          for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds / 2; pixel++) {
-            if (pixel < lightLedsCount - transitionLeds / 2) {
-              strip->SetPixelColor(pixel, convInt(lights[light].currentColors));
+          for (int pixel = 0; pixel < dividedLightsArray[0]; pixel++)
+          {
+            if (pixel < dividedLightsArray[0] - transitionLeds / 2) {
+              strip->SetPixelColor(pixel, convFloat(lights[light].currentColors));
             } else {
-              strip->SetPixelColor(pixel, blendingEntert(lights[0].currentColors, lights[1].currentColors, pixel + 1 - (lightLedsCount - transitionLeds / 2 )));
-            }
-          }
-        } else if (light == lightsCount - 1) {
-          for (uint8_t pixel = 0; pixel < lightLedsCount - transitionLeds / 2 ; pixel++) {
-            strip->SetPixelColor(pixel + transitionLeds / 2 + lightLedsCount * light, convInt(lights[light].currentColors));
-          }
-        } else {
-          for (uint8_t pixel = 0; pixel < lightLedsCount; pixel++) {
-            if (pixel < lightLedsCount - transitionLeds) {
-              strip->SetPixelColor(pixel + transitionLeds / 2 + lightLedsCount * light, convInt(lights[light].currentColors));
-            } else {
-              strip->SetPixelColor(pixel + transitionLeds / 2 + lightLedsCount * light, blendingEntert(lights[light].currentColors, lights[light + 1].currentColors, pixel - (lightLedsCount - transitionLeds ) + 1));
+              strip->SetPixelColor(pixel, blendingEntert(lights[0].currentColors, lights[1].currentColors, pixel + 1 - (dividedLightsArray[0] - transitionLeds / 2 )));
             }
           }
         }
+        else {
+          for (int pixel = 0; pixel < dividedLightsArray[light]; pixel++)
+          {
+            long pixelSum;
+            for (int value = 0; value < light; value++)
+            {
+              if (value + 1 == light) {
+                pixelSum += dividedLightsArray[value] - transitionLeds;
+              }
+              else {
+                pixelSum += dividedLightsArray[value];
+              }
+            }
+            if (pixel < transitionLeds / 2) {
+              strip->SetPixelColor(pixel + pixelSum + transitionLeds, blendingEntert( lights[light - 1].currentColors, lights[light].currentColors, pixel + 1));
+            }
+            else if (pixel > dividedLightsArray[light] - transitionLeds / 2 - 1) {
+              //Serial.println(String(pixel));
+              strip->SetPixelColor(pixel + pixelSum + transitionLeds, blendingEntert( lights[light].currentColors, lights[light + 1].currentColors, pixel + transitionLeds / 2 - dividedLightsArray[light]));
+            }
+            else  {
+              strip->SetPixelColor(pixel + pixelSum + transitionLeds, convFloat(lights[light].currentColors));
+            }
+            pixelSum = 0;
+          }
+        }
       } else {
-        strip->ClearTo(RgbwColor(lights[0].colors[0], lights[0].colors[1], lights[0].colors[2], 0), 0, lightLedsCount - 1);
+        strip->ClearTo(RgbwColor(lights[0].colors[0], lights[0].colors[1], lights[0].colors[2], 0), 0, pixelCount - 1);
       }
     }
     strip->Show();
