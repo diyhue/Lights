@@ -1,12 +1,13 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
-#include <WiFiUdp.h>
-#include <ArduinoOTA.h>
+#include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
+#include <ArduinoJson.h>
 #include <EEPROM.h>
 
 #define light_name "Dimmable Hue Light"  //default light name
+#define LIGHT_VERSION 2.1
 
 #define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true.
 //For GPIO based on/off and brightness control, it is mandatory to connect the following GPIO pins to ground using 10k resistor
@@ -31,6 +32,7 @@ float step_level[LIGHTS_COUNT], current_bri[LIGHTS_COUNT];
 byte mac[6];
 
 ESP8266WebServer server(80);
+ESP8266HTTPUpdateServer httpUpdateServer;
 
 void handleNotFound() {
   String message = "File Not Found\n\n";
@@ -142,7 +144,7 @@ void lightEngine() {
 
 void setup() {
   EEPROM.begin(512);
-  
+
 #ifdef USE_STATIC_IP
   WiFi.config(strip_ip, gateway_ip, subnet_mask);
 #endif
@@ -164,7 +166,7 @@ void setup() {
   WiFiManager wifiManager;
   wifiManager.setConfigPortalTimeout(120);
   wifiManager.autoConnect(light_name);
-  
+
   if (! light_state[0])  {
     // Show that we are connected
     analogWrite(pins[0], 100);
@@ -174,126 +176,90 @@ void setup() {
 
   WiFi.macAddress(mac);
 
-  // Port defaults to 8266
-  // ArduinoOTA.setPort(8266);
-
-  // Hostname defaults to esp8266-[ChipID]
-  // ArduinoOTA.setHostname("myesp8266");
-
-  // No authentication by default
-  // ArduinoOTA.setPassword((const char *)"123");
-
-  ArduinoOTA.begin();
-
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
   digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
+
+  httpUpdateServer.setup(&server); // start http server
+
   if (use_hardware_switch == true) {
     pinMode(button1_pin, INPUT);
     pinMode(button2_pin, INPUT);
   }
 
 
-  server.on("/switch", []() {
-    server.send(200, "text/plain", "OK");
-    float transitiontime = 4;
-    int button;
-    for (uint8_t i = 0; i < server.args(); i++) {
-      if (server.argName(i) == "button") {
-        button = server.arg(i).toInt();
-      }
-    }
-    for (int i = 0; i < LIGHTS_COUNT; i++) {
-      if (button == 1000) {
-        if (light_state[i] == false) {
-          light_state[i] = true;
-          scene = 0;
-        } else {
-          apply_scene(scene, i);
-          scene++;
-          if (scene == 11) {
-            scene = 0;
+  server.on("/state", HTTP_PUT, []() { // HTTP PUT request used to set a new light state
+    DynamicJsonDocument root(1024);
+    DeserializationError error = deserializeJson(root, server.arg("plain"));
+
+    if (error) {
+      server.send(404, "text/plain", "FAIL. " + server.arg("plain"));
+    } else {
+      for (JsonPair state : root.as<JsonObject>()) {
+        const char* key = state.key().c_str();
+        int light = atoi(key) - 1;
+        JsonObject values = state.value();
+        int transitiontime = 4;
+
+        if (values.containsKey("on")) {
+          if (values["on"]) {
+            light_state[light] = true;
+            if (EEPROM.read(1) == 0 && EEPROM.read(0) == 0) {
+              EEPROM.write(0, 1);
+            }
+          } else {
+            light_state[light] = false;
+            if (EEPROM.read(1) == 0 && EEPROM.read(0) == 1) {
+              EEPROM.write(0, 0);
+            }
           }
         }
-      } else if (button == 2000) {
-        if (light_state[i] == false) {
-          bri[i] = 30;
-          light_state[i] = true;
-        } else {
-          bri[i] += 30;
+
+        if (values.containsKey("bri")) {
+          bri[light] = values["bri"];
         }
-        if (bri[i] > 255) bri[i] = 255;
-      } else if (button == 3000 && light_state[i] == true) {
-        bri[i] -= 30;
-        if (bri[i] < 1) bri[i] = 1;
-      } else if (button == 4000) {
-        light_state[i] = false;
+
+        if (values.containsKey("bri_inc")) {
+          bri[light] += (int) values["bri_inc"];
+          if (bri[light] > 255) bri[light] = 255;
+          else if (bri[light] < 1) bri[light] = 1;
+        }
+
+        if (values.containsKey("transitiontime")) {
+          transitiontime = values["transitiontime"];
+        }
+        process_lightdata(light, transitiontime);
       }
-      if (light_state[i]) {
-        step_level[i] = ((float)bri[i] - current_bri[i]) / transitiontime;
-      } else {
-        step_level[i] = current_bri[i] / transitiontime;
-      }
+      String output;
+      serializeJson(root, output);
+      server.send(200, "text/plain", output);
     }
   });
 
-  server.on("/set", []() {
-    uint8_t light;
-    float transitiontime = 4;
-    for (uint8_t i = 0; i < server.args(); i++) {
-      if (server.argName(i) == "light") {
-        light = server.arg(i).toInt() - 1;
-      }
-      else if (server.argName(i) == "on") {
-        if (server.arg(i) == "True" || server.arg(i) == "true") {
-          light_state[light] = true;
-          if (EEPROM.read(1) == 0 && EEPROM.read(0) == 0) {
-            EEPROM.write(0, 1);
-          }
-        }
-        else {
-          light_state[light] = false;
-          if (EEPROM.read(1) == 0 && EEPROM.read(0) == 1) {
-            EEPROM.write(0, 0);
-          }
-        }
-        EEPROM.commit();
-      }
-      else if (server.argName(i) == "bri") {
-        light_state[light] = true;
-        if (server.arg(i).toInt() != 0)
-          bri[light] = server.arg(i).toInt();
-      }
-      else if (server.argName(i) == "bri_inc") {
-        bri[light] += server.arg(i).toInt();
-        if (bri[light] > 255) bri[light] = 255;
-        else if (bri[light] < 0) bri[light] = 0;
-      }
-      else if (server.argName(i) == "alert" && server.arg(i) == "select") {
-        if (light_state[light]) {
-          current_bri[light] = 0;
-        } else {
-          current_bri[light] = 255;
-        }
-      }
-      else if (server.argName(i) == "transitiontime") {
-        transitiontime = server.arg(i).toInt();
-      }
-    }
-    process_lightdata(light, transitiontime);
-    server.send(200, "text/plain", "OK, bri:" + (String)bri[light] + ", state:" + light_state[light]);
+  server.on("/state", HTTP_GET, []() { // HTTP GET request used to fetch current light state
+    uint8_t light = server.arg("light").toInt() - 1;
+    DynamicJsonDocument root(1024);
+    root["on"] = light_state[light];
+    root["bri"] = bri[light];
+    String output;
+    serializeJson(root, output);
+    server.send(200, "text/plain", output);
   });
 
-  server.on("/get", []() {
-    uint8_t light;
-    if (server.hasArg("light"))
-      light = server.arg("light").toInt() - 1;
-    String power_status;
-    power_status = light_state[light] ? "true" : "false";
-    server.send(200, "text/plain", "{\"on\": " + power_status + ", \"bri\": " + (String)bri[light] + "}");
-  });
 
-  server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": " + (String)LIGHTS_COUNT + ",\"name\": \"" light_name "\",\"modelid\": \"LWB010\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+  server.on("/detect", []() { // HTTP GET request used to discover the light type
+    char macString[32] = {0};
+    sprintf(macString, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    DynamicJsonDocument root(1024);
+    root["name"] = light_name;
+    root["lights"] = LIGHTS_COUNT;
+    root["protocol"] = "native_multi";
+    root["modelid"] = "LWB010";
+    root["type"] = "dimmable_light";
+    root["mac"] = String(macString);
+    root["version"] = LIGHT_VERSION;
+    String output;
+    serializeJson(root, output);
+    server.send(200, "text/plain", output);
   });
 
   server.on("/", []() {
@@ -408,13 +374,18 @@ void setup() {
 
   });
 
+  server.on("/reset", []() { // trigger manual reset
+    server.send(200, "text/html", "reset");
+    delay(1000);
+    ESP.restart();
+  });
+
   server.onNotFound(handleNotFound);
 
   server.begin();
 }
 
 void loop() {
-  ArduinoOTA.handle();
   server.handleClient();
   lightEngine();
 }
