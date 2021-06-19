@@ -19,6 +19,8 @@ Steps to Follow:
 
 
 More Information is available in our [documentation](https://diyhue.readthedocs.io/en/latest/lights/diylights.html)
+
+www.diyhue.org
 <!---
 ## Contribuiting
 The following is a set of guidelines for contributing to diyHue Lights. These are mostly guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request.
