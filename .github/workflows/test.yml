@@ -35,5 +35,15 @@ jobs:
           echo Add other actions to build,
           echo test, and deploy your project.
       - name: Compile Arduino Sketches
-        uses: arduino/compile-sketches@v1.0.0
-
+      - uses: arduino/compile-sketches@v1
+        with:
+              fqbn: 'esp8266:esp8266'
+              libraries: |
+                - name: Servo
+                - name: Stepper
+                  version: 1.1.3
+              platform: |
+                - source-path: "https://github.com/esp8266/Arduino.git"
+                  name: "esp8266:esp8266"
+              sketch-paths: |
+                - examples
