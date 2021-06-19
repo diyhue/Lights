@@ -30,5 +30,9 @@
    "sk6812_strip":{
       "version":2.0,
       "filename":"Generic_SK6812_Strip.bin"
+   },
+   "ws2812_gradient":{
+      "version":2.0,
+      "filename":"Gradient_Strip_WS2812.bin"
    }
 }
