@@ -1,38 +1,38 @@
-{  
-   "cct":{  
+{
+   "cct":{
       "version":2.0,
       "filename":"Generic_CCT_Light.bin"
    },
-   "rgb-cct":{  
+   "rgb-cct":{
       "version":2.0,
       "filename":"Generic_RGB_CCT_Light.bin"
    },
-   "rgbw":{  
+   "rgbw":{
       "version":2.0,
       "filename":"Generic_RGBW_Light.bin"
    },
-   "dimmable":{  
+   "dimmable":{
       "version":2.0,
       "filename":"Generic_Dimmable_Light.bin"
    },
-   "on_off":{  
+   "on_off":{
       "version":2.0,
       "filename":"Generic_ON_OFF_Light.bin"
    },
-   "rgb":{  
+   "rgb":{
       "version":3.0,
       "filename":"Generic_RGB_Light.bin"
    },
-   "ws2812_strip":{  
+   "ws2812_strip":{
       "version":3.1,
       "filename":"Generic_WS2812_Strip.bin"
    },
-   "ws2812_ring":{  
-      "version":2.0,
-      "filename":"Generic_WS2812_Ring.bin"
-   },
-   "sk6812_strip":{  
+   "sk6812_strip":{
       "version":2.0,
       "filename":"Generic_SK6812_Strip.bin"
+   },
+   "ws2812_gradient":{
+      "version":2.0,
+      "filename":"Gradient_Strip_WS2812.bin"
    }
 }

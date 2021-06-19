@@ -4,7 +4,10 @@ Create your own diyHue compatible Lights!
 
 Steps to Follow:
 - Select the correct Sketch according to your Harware Setup (e.g. WS2812b)
-- Upload Firmware to Microcontroller with Arduino IDE (No Changes to Code)
+- Upload Firmware to Microcontroller
+  - Easy Web Tool https://install.diyhue.org (Use Chrome or Edge Browser)
+  - or
+  - with Arduino IDE (No Changes to Code)
 - Connect Hardware (LEDs) and Powersupply
 - Connect to ESP8266 WiFi (e.g. search for new WiFi on Smartphone) --> `"Hue rgb strip"`
 - Browse `192.168.4.1` --> Connect ESP8266 to your local WiFi
