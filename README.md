@@ -16,7 +16,7 @@ Steps to Follow:
 
 
 More Information is available in our [documentation](https://diyhue.readthedocs.io/en/latest/lights/diylights.html)
-
+<!---
 ## Contribuiting
 The following is a set of guidelines for contributing to diyHue Lights. These are mostly guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request.
 
@@ -39,3 +39,5 @@ Also within you PR, please create a commit to `.travis.yml`, adding a line in th
 ```
 
 Finaly, if your sketch requires any of the libraries not installed on [this](https://github.com/diyhue/Lights/blob/675d2693afdb5f38fd9e61fdcf21aa042a7817b4/install.sh#L94) line of `install.sh`, then please add a commit adding them.
+
+--->
