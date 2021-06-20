@@ -10,10 +10,10 @@
 
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
-#include <WiFiUdp.h>
-#include <ArduinoOTA.h>
+#include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
+#include <ArduinoJson.h>
 #include <EEPROM.h>
 #include <RCSwitch.h>
 
@@ -22,9 +22,10 @@ RCSwitch mySwitch = RCSwitch();
 
 //############ CONFIG ############
 
-#define light_name "On-OFF Hue 433Mhz"  //default light name
+#define light_name "Hue Plug"  //default light name
+#define LIGHT_VERSION 2.1
+#define LIGHTS_COUNT 8 // 4 or 8 --> maximum 8
 
-#define devicesCount 8 // 4 or 8 --> maximum 8
 char* houseCodeA = "11110"; //Group A --> Remote Code for Socket 1-4
 char* houseCodeB = "11100"; //Group B --> Remote Code for Socket 5-8
 uint8_t transmitterPin = 4;     // What Pin is the Transmitter conected?
@@ -35,10 +36,11 @@ uint8_t repeatTransmit = 2; // Number of Transmit attempts //default 2
 
 
 
-uint8_t devicesPins[devicesCount] = {12, 13, 14, 5, 12, 13, 14, 5}; //irrelevant
+uint8_t pins[LIGHTS_COUNT] = {12, 13, 14, 5, 12, 13, 14, 5}; //irrelevant
 char* deviceId[] = {"10000", "01000", "00100", "00010", "10000", "01000", "00100", "00010"};
 int c;
 
+//############ CONFIG ############
 
 //#define USE_STATIC_IP //! uncomment to enable Static IP Adress
 #ifdef USE_STATIC_IP
@@ -47,11 +49,11 @@ IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
 IPAddress subnet_mask(255, 255, 255,   0);
 #endif
 
-
-bool device_state[devicesCount];
+bool light_state[LIGHTS_COUNT];
 byte mac[6];
 
 ESP8266WebServer server(80);
+ESP8266HTTPUpdateServer httpUpdateServer;
 
 void handleNotFound() {
   String message = "File Not Found\n\n";
@@ -108,8 +110,8 @@ void setup() {
   Serial.begin(115200);
   mySwitch.enableTransmit(transmitterPin);
 
-  for (uint8_t ch = 0; ch < devicesCount; ch++) {
-    pinMode(devicesPins[ch], OUTPUT);
+  for (uint8_t ch = 0; ch < LIGHTS_COUNT; ch++) {
+    pinMode(pins[ch], OUTPUT);
   }
   
 
@@ -119,8 +121,8 @@ void setup() {
 
 
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
-    for (uint8_t ch = 0; ch < devicesCount; ch++) {
-      digitalWrite(devicesPins[ch], OUTPUT);
+    for (uint8_t ch = 0; ch < LIGHTS_COUNT; ch++) {
+      digitalWrite(pins[ch], OUTPUT);
     }
 
   }
@@ -133,66 +135,72 @@ void setup() {
 
   WiFi.macAddress(mac);
 
-  // Port defaults to 8266
-  // ArduinoOTA.setPort(8266);
 
-  // Hostname defaults to esp8266-[ChipID]
-  // ArduinoOTA.setHostname("myesp8266");
+  server.on("/state", HTTP_PUT, []() { // HTTP PUT request used to set a new light state
+    DynamicJsonDocument root(1024);
+    DeserializationError error = deserializeJson(root, server.arg("plain"));
 
-  // No authentication by default
-  // ArduinoOTA.setPassword((const char *)"123");
+    if (error) {
+      server.send(404, "text/plain", "FAIL. " + server.arg("plain"));
+    } else {
+      for (JsonPair state : root.as<JsonObject>()) {
+        const char* key = state.key().c_str();
+        int light = atoi(key) - 1;
+        JsonObject values = state.value();
+        int transitiontime = 4;
 
-  ArduinoOTA.begin();
-
-
-  server.on("/set", []() {
-    uint8_t device;
-
-    for (uint8_t i = 0; i < server.args(); i++) {
-      if (server.argName(i) == "light") {
-        device = server.arg(i).toInt() - 1;
-      }
-      else if (server.argName(i) == "on") {
-        if (server.arg(i) == "True" || server.arg(i) == "true") {
-          if (EEPROM.read(1) == 0 && EEPROM.read(0) != 1) {
-            EEPROM.write(0, 1);
-            EEPROM.commit();
+        if (values.containsKey("on")) {
+          if (values["on"]) {
+            light_state[light] = true;
+            digitalWrite(pins[light], HIGH);
+            SwitchOn433(light);
+            if (EEPROM.read(1) == 0 && EEPROM.read(0) == 0) {
+              EEPROM.write(0, 1);
+            }
+          } else {
+            light_state[light] = false;
+            digitalWrite(pins[light], LOW);
+            SwitchOff433(light);
+            if (EEPROM.read(1) == 0 && EEPROM.read(0) == 1) {
+              EEPROM.write(0, 0);
+            }
           }
-          device_state[device] = true;
-          digitalWrite(devicesPins[device], HIGH);
-          SwitchOn433(device);
-        }
-        else {
-          if (EEPROM.read(1) == 0 && EEPROM.read(0) != 0) {
-            EEPROM.write(0, 0);
-            EEPROM.commit();
-          }
-          device_state[device] = false;
-          digitalWrite(devicesPins[device], LOW);
-          SwitchOff433(device);
         }
       }
+      String output;
+      serializeJson(root, output);
+      server.send(200, "text/plain", output);
     }
-    server.send(200, "text/plain", "OK, state:" + device_state[device]);
   });
 
-  server.on("/get", []() {
-    uint8_t light;
-    if (server.hasArg("light"))
-      light = server.arg("light").toInt() - 1;
-    String power_status;
-    power_status = device_state[light] ? "true" : "false";
-    server.send(200, "text/plain", "{\"on\": " + power_status + "}");
+  server.on("/state", HTTP_GET, []() { // HTTP GET request used to fetch current light state
+    uint8_t light = server.arg("light").toInt() - 1;
+    DynamicJsonDocument root(1024);
+    root["on"] = light_state[light];
+    String output;
+    serializeJson(root, output);
+    server.send(200, "text/plain", output);
   });
 
-  server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": " + String(devicesCount) + ",\"name\": \"" light_name "\",\"modelid\": \"Plug 01\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
-  
-    
-    });
+
+  server.on("/detect", []() { // HTTP GET request used to discover the light type
+    char macString[32] = {0};
+    sprintf(macString, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    DynamicJsonDocument root(1024);
+    root["name"] = light_name;
+    root["lights"] = LIGHTS_COUNT;
+    root["protocol"] = "native_multi";
+    root["modelid"] = "LOM001";
+    root["type"] = "plug_device";
+    root["mac"] = String(macString);
+    root["version"] = LIGHT_VERSION;
+    String output;
+    serializeJson(root, output);
+    server.send(200, "text/plain", output);
+  });
 
   server.on("/", []() {
-    float transitiontime = 100;
+    float transitiontime = 4;
     if (server.hasArg("startup")) {
       if (  EEPROM.read(1) != server.arg("startup").toInt()) {
         EEPROM.write(1, server.arg("startup").toInt());
@@ -200,22 +208,19 @@ void setup() {
       }
     }
 
-    for (uint8_t device = 0; device < devicesCount; device++) {
+    for (uint8_t device = 0; device < LIGHTS_COUNT; device++) {
 
       if (server.hasArg("on")) {
         if (server.arg("on") == "true") {
-          device_state[device] = true;
-          digitalWrite(devicesPins[device], HIGH);
-
-          SwitchOn433(device);
-
+          light_state[device] = true;
+          digitalWrite(pins[device], HIGH);
           if (EEPROM.read(1) == 0 && EEPROM.read(0) != 1) {
             EEPROM.write(0, 1);
             EEPROM.commit();
           }
         } else {
-          device_state[device] = false;
-          digitalWrite(devicesPins[device], LOW);
+          light_state[device] = false;
+          digitalWrite(pins[device], LOW);
           SwitchOff433(device);
           if (EEPROM.read(1) == 0 && EEPROM.read(0) != 0) {
             EEPROM.write(0, 0);
@@ -243,8 +248,8 @@ void setup() {
     http_content += "<form class=\"pure-form pure-form-aligned\" action=\"/\" method=\"post\">";
     http_content += "<div class=\"pure-control-group\">";
     http_content += "<label for=\"power\"><strong>Power</strong></label>";
-    http_content += "<a class=\"pure-button"; if (device_state[0]) http_content += "  pure-button-primary"; http_content += "\" href=\"/?on=true\">ON</a>";
-    http_content += "<a class=\"pure-button"; if (!device_state[0]) http_content += "  pure-button-primary"; http_content += "\" href=\"/?on=false\">OFF</a>";
+    http_content += "<a class=\"pure-button"; if (light_state[0]) http_content += "  pure-button-primary"; http_content += "\" href=\"/?on=true\">ON</a>";
+    http_content += "<a class=\"pure-button"; if (!light_state[0]) http_content += "  pure-button-primary"; http_content += "\" href=\"/?on=false\">OFF</a>";
     http_content += "</div>";
     http_content += "</fieldset>";
     http_content += "</form>";
@@ -255,6 +260,11 @@ void setup() {
 
   });
 
+  server.on("/reset", []() { // trigger manual reset
+    server.send(200, "text/html", "reset");
+    delay(1000);
+    ESP.restart();
+  });
 
   server.onNotFound(handleNotFound);
 
@@ -262,8 +272,6 @@ void setup() {
 }
 
 void loop() {
-  ArduinoOTA.handle();
   server.handleClient();
 }
-
 
