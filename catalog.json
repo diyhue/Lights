@@ -34,5 +34,17 @@
    "ws2812_gradient":{
       "version":2.0,
       "filename":"Gradient_Strip_WS2812.bin"
+   },
+   "SonoffTXT3US1C":{
+      "version":2.1,
+      "filename":"SonoffTXT3US1C.bin"
+   },
+   "SonoffTXT3US2C":{
+      "version":2.1,
+      "filename":"SonoffTXT3US2C.bin"
+   },
+   "SonoffTXT3US3C":{
+      "version":2.1,
+      "filename":"SonoffTXT3US3C.bin"
    }
 }
