@@ -1,23 +1,21 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
-#include <ArduinoOTA.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266HTTPUpdateServer.h>
+#include <WiFiManager.h>
+#include <ArduinoJson.h>
 #include <EEPROM.h>
 
-////////////////////////////// USER SETTINGS ////////////////////////////// 
+////////////////////////////// USER SETTINGS //////////////////////////////
 
 #define devicesCount 2                          //  How many Light attach 
 #define light_name "SonoffTX2C"                 //  default light name (ArduinoOTA name)
+#define LIGHT_VERSION 2.1
 
 //uint8_t devicesPins[devicesCount] = {12};     //  the pin that the light is attached to  (FOR SonoffTX 1 gang)
 uint8_t devicesPins[devicesCount] = {12,5};     //  the pin that the light is attached to  (FOR SonoffTX 2 gang)
 //uint8_t devicesPins[devicesCount] = {12,5,4}; //  the pin that the light is attached to  (FOR SonoffTX 3 gang)
-
-#ifndef STASSID
-#define STASSID "YOUR SSID"                   //  Set your WIFI SSID to connect to
-#define STAPSK  "YOUR PASSWORD"                       //  Set your WIFI PASSWORD to connect to
-#endif
 
 uint8_t ledPin = 13;                             // the pin that the indicator light is attached to
 uint8_t button1Pin = 0;                          // the pin that the pushbutton1 is attached to
@@ -38,9 +36,8 @@ unsigned long lastButton3Push = 0;
 uint8_t buttonThreshold = 10;
 bool device_state[devicesCount];
 byte mac[6];
-const char* ssid     = STASSID;
-const char* password = STAPSK;
 ESP8266WebServer server(80);
+ESP8266HTTPUpdateServer httpUpdateServer;
 
 void handleNotFound() {
   String message = "File Not Found\n\n";
@@ -59,24 +56,26 @@ void handleNotFound() {
 
 void setup() {
 
-for (uint8_t ch = 0; ch < devicesCount; ch++) {
-pinMode(devicesPins[ch], OUTPUT);
+  for (uint8_t ch = 0; ch < devicesCount; ch++) {
+    pinMode(devicesPins[ch], OUTPUT);
   }
-  
-digitalWrite(devicesPins[0], HIGH);
-digitalWrite(devicesPins[1], HIGH);
-digitalWrite(devicesPins[2], HIGH);
-EEPROM.begin(512);
-pinMode(ledPin, OUTPUT);
-pinMode(button1Pin, INPUT);
-pinMode(button2Pin, INPUT);
-pinMode(button3Pin, INPUT);
-digitalWrite(ledPin, HIGH);
-WiFi.mode(WIFI_STA);
-WiFi.begin(ssid, password);
 
-  while (WiFi.status() == WL_CONNECTED) {
-  }
+  digitalWrite(devicesPins[0], HIGH);
+  digitalWrite(devicesPins[1], HIGH);
+  digitalWrite(devicesPins[2], HIGH);
+  EEPROM.begin(512);
+  pinMode(ledPin, OUTPUT);
+  pinMode(button1Pin, INPUT);
+  pinMode(button2Pin, INPUT);
+  pinMode(button3Pin, INPUT);
+  digitalWrite(ledPin, HIGH);
+  WiFi.mode(WIFI_STA);
+  WiFiManager wifiManager;
+  wifiManager.setConfigPortalTimeout(120);
+  wifiManager.autoConnect(light_name);
+
+  WiFi.macAddress(mac);
+
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
     for (uint8_t ch = 0; ch < devicesCount; ch++) {
       digitalWrite(devicesPins[ch], OUTPUT);
@@ -84,63 +83,67 @@ WiFi.begin(ssid, password);
   }
 
   delay(10000);
-  WiFi.macAddress(mac); 
-  ArduinoOTA.setHostname(light_name);
-  ArduinoOTA.begin();
-      digitalWrite(ledPin, LOW);
-      delay(40);
-      digitalWrite(ledPin, HIGH);
-      delay(40);
-      digitalWrite(ledPin, LOW);
-      delay(40);
-      digitalWrite(ledPin, HIGH);
-      delay(40);
-      digitalWrite(ledPin, LOW);
-      delay(40);
-      digitalWrite(ledPin, HIGH);
-      delay(40);
-      digitalWrite(ledPin, LOW);
-      delay(40);
-      digitalWrite(ledPin, HIGH);
-      delay(40);
-      
-  server.on("/set", []() {
-    uint8_t device;
-    for (uint8_t i = 0; i < server.args(); i++) {
-      if (server.argName(i) == "light") {
-        device = server.arg(i).toInt() - 1;
-      }
-      else if (server.argName(i) == "on") {
-        if (server.arg(i) == "True" || server.arg(i) == "true") {
-          if (EEPROM.read(1) == 0 && EEPROM.read(0) != 1) {
-            EEPROM.write(0, 1);
-            EEPROM.commit();
+  WiFi.macAddress(mac);
+
+
+  server.on("/state", HTTP_PUT, []() { // HTTP PUT request used to set a new light state
+    DynamicJsonDocument root(1024);
+    DeserializationError error = deserializeJson(root, server.arg("plain"));
+
+    if (error) {
+      server.send(404, "text/plain", "FAIL. " + server.arg("plain"));
+    } else {
+      for (JsonPair state : root.as<JsonObject>()) {
+        const char* key = state.key().c_str();
+        int device = atoi(key) - 1;
+        JsonObject values = state.value();
+
+        if (values.containsKey("on")) {
+          if (values["on"]) {
+            device_state[device] = true;
+            digitalWrite(devicesPins[device], HIGH);
+            if (EEPROM.read(1) == 0 && EEPROM.read(0) == 0) {
+              EEPROM.write(0, 1);
+            }
+          } else {
+            device_state[device] = false;
+            digitalWrite(devicesPins[device], LOW);
+            if (EEPROM.read(1) == 0 && EEPROM.read(0) == 1) {
+              EEPROM.write(0, 0);
+            }
           }
-          device_state[device] = true;
-          digitalWrite(devicesPins[device], HIGH);
-        }
-        else {
-          if (EEPROM.read(1) == 0 && EEPROM.read(0) != 0) {
-            EEPROM.write(0, 0);
-            EEPROM.commit();
-          }
-          device_state[device] = false;
-          digitalWrite(devicesPins[device], LOW);
         }
       }
+      String output;
+      serializeJson(root, output);
+      server.send(200, "text/plain", output);
     }
-    server.send(200, "text/plain", "OK, state:" + device_state[device]);
   });
-  server.on("/get", []() {
-    uint8_t light;
-    if (server.hasArg("light"))
-      light = server.arg("light").toInt() - 1;
-    String power_status;
-    power_status = device_state[light] ? "true" : "false";
-    server.send(200, "text/plain", "{\"on\": " + power_status + "}");
+
+  server.on("/state", HTTP_GET, []() { // HTTP GET request used to fetch current light state
+    uint8_t light = server.arg("light").toInt() - 1;
+    DynamicJsonDocument root(1024);
+    root["on"] = device_state[light];
+    String output;
+    serializeJson(root, output);
+    server.send(200, "text/plain", output);
   });
-  server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": " + String(devicesCount) + ",\"name\": \"" light_name "\",\"modelid\": \"Plug 01\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+
+
+  server.on("/detect", []() { // HTTP GET request used to discover the light type
+    char macString[32] = {0};
+    sprintf(macString, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    DynamicJsonDocument root(1024);
+    root["name"] = light_name;
+    root["lights"] = devicesCount;
+    root["protocol"] = "native_multi";
+    root["modelid"] = "LOM001";
+    root["type"] = "plug_device";
+    root["mac"] = String(macString);
+    root["version"] = LIGHT_VERSION;
+    String output;
+    serializeJson(root, output);
+    server.send(200, "text/plain", output);
   });
 
   server.on("/", []() {
@@ -174,7 +177,7 @@ WiFi.begin(ssid, password);
       ESP.reset();
     }
 
-  String http_content = "<!doctype html>";
+    String http_content = "<!doctype html>";
     http_content += "<html>";
     http_content += "<head>";
     http_content += "<meta charset=\"utf-8\">";
@@ -216,7 +219,7 @@ WiFi.begin(ssid, password);
 }
 
 void btn1read () {
-  
+
   if (millis() < lastButton1Push + buttonThreshold) return; // check button only when the threshold after last push is reached
   lastButton1Push = millis();
   button1State = digitalRead(button1Pin);
@@ -234,7 +237,7 @@ void btn1read () {
       } else {
         digitalWrite(devicesPins[0], LOW);
         device_state[0] == false;
-       
+
         if (EEPROM.read(1) == 0 && EEPROM.read(0) != 0) {
           EEPROM.write(0, 0);
           EEPROM.commit();
@@ -243,13 +246,13 @@ void btn1read () {
     }
   }
   lastButton1State = button1State;
-    String power_status;
-    power_status = device_state[0] ? "true" : "false";
-    server.send(200, "text/plain", "{\"on\": " + power_status + "}");
+  String power_status;
+  power_status = device_state[0] ? "true" : "false";
+  server.send(200, "text/plain", "{\"on\": " + power_status + "}");
 }
 
 void btn2read () {
-  
+
   if (millis() < lastButton2Push + buttonThreshold) return; // check button only when the threshold after last push is reached
   lastButton2Push = millis();
   button2State = digitalRead(button2Pin);
@@ -267,7 +270,7 @@ void btn2read () {
       } else {
         digitalWrite(devicesPins[1], LOW);
         device_state[1] == false;
-   
+
         if (EEPROM.read(1) == 0 && EEPROM.read(0) != 0) {
           EEPROM.write(0, 0);
           EEPROM.commit();
@@ -279,7 +282,7 @@ void btn2read () {
 }
 
 void btn3read () {
-  
+
   if (millis() < lastButton3Push + buttonThreshold) return; // check button only when the threshold after last push is reached
   lastButton3Push = millis();
   button3State = digitalRead(button3Pin);
@@ -297,7 +300,7 @@ void btn3read () {
       } else {
         digitalWrite(devicesPins[2], LOW);
         device_state[2] == false;
-     
+
         if (EEPROM.read(1) == 0 && EEPROM.read(0) != 0) {
           EEPROM.write(0, 0);
           EEPROM.commit();
@@ -309,21 +312,20 @@ void btn3read () {
 }
 
 void loop() {
-  ArduinoOTA.handle();
   server.handleClient();
-  
+
   if (devicesCount == 1) {
-   btn1read(); 
-     }
-     
+    btn1read();
+  }
+
   if (devicesCount == 2) {
-   btn1read(); 
-   btn2read();
-     }
-     
+    btn1read();
+    btn2read();
+  }
+
   if (devicesCount == 3) {
-   btn1read(); 
-   btn2read();
-   btn3read();
-     }
+    btn1read();
+    btn2read();
+    btn3read();
+  }
 }

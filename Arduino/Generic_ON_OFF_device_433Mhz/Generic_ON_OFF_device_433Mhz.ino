@@ -113,7 +113,7 @@ void setup() {
   for (uint8_t ch = 0; ch < LIGHTS_COUNT; ch++) {
     pinMode(pins[ch], OUTPUT);
   }
-  
+
 
  #ifdef USE_STATIC_IP
   WiFi.config(strip_ip, gateway_ip, subnet_mask);
@@ -126,7 +126,7 @@ void setup() {
     }
 
   }
-  
+
   WiFi.mode(WIFI_STA);
   WiFiManager wifiManager;
 
