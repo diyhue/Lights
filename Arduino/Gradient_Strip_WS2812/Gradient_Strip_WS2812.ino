@@ -462,7 +462,7 @@ bool saveConfig() { // save config in LittleFS partition in JSON file
   json["off"] = offPin;
   json["hw"] = hwSwitch;
   json["dhcp"] = useDhcp;
-  for (uint16_t i = 0; i < lightsCount; i++) {
+  for (uint16_t i = 0; i < 7; i++) {
     json["dividedLight_" + String(i)] = dividedLightsArray[i];
   }
   json["pixelCount"] = pixelCount;
@@ -526,7 +526,7 @@ bool loadConfig() { // load the configuration from LittleFS partition
   onPin = (uint8_t) json["on"];
   offPin = (uint8_t) json["off"];
   hwSwitch = json["hw"];
-  for (uint16_t i = 0; i < lightsCount; i++) {
+  for (uint16_t i = 0; i < 7; i++) {
     dividedLightsArray[i] = (uint16_t) json["dividedLight_" + String(i)];
   }
   pixelCount = (uint16_t) json["pixelCount"];
