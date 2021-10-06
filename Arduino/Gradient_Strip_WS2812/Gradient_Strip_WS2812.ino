@@ -462,7 +462,6 @@ bool saveConfig() { // save config in LittleFS partition in JSON file
   json["off"] = offPin;
   json["hw"] = hwSwitch;
   json["dhcp"] = useDhcp;
-  json["lightsCount"] = lightsCount;
   for (uint16_t i = 0; i < lightsCount; i++) {
     json["dividedLight_" + String(i)] = dividedLightsArray[i];
   }
@@ -527,7 +526,6 @@ bool loadConfig() { // load the configuration from LittleFS partition
   onPin = (uint8_t) json["on"];
   offPin = (uint8_t) json["off"];
   hwSwitch = json["hw"];
-  lightsCount = (uint16_t) json["lightsCount"];
   for (uint16_t i = 0; i < lightsCount; i++) {
     dividedLightsArray[i] = (uint16_t) json["dividedLight_" + String(i)];
   }
@@ -800,7 +798,6 @@ void setup() {
       server.arg("name").toCharArray(lightName, LIGHT_NAME_MAX_LENGTH);
       startup = server.arg("startup").toInt();
       scene = server.arg("scene").toInt();
-      lightsCount = server.arg("lightscount").toInt();
       pixelCount = server.arg("pixelcount").toInt();
       transitionLeds = server.arg("transitionleds").toInt();
       rgb_multiplier[0] = server.arg("rpct").toInt();
