@@ -15,6 +15,7 @@ IPAddress submask(255, 255, 255,   0);
 #define LIGHT_VERSION 3.1
 #define LIGHT_NAME_MAX_LENGTH 32 // Longer name will get stripped
 #define ENTERTAINMENT_TIMEOUT 1500 // millis
+#define POWER_MOSFET_PIN 13 // WS2812 consume ~1mA/led when off. By installing a MOSFET it will cut the power to the leds when lights ore off.
 
 struct state {
   uint8_t colors[3], bri = 100, sat = 254, colorMode = 2;
@@ -24,7 +25,7 @@ struct state {
 };
 
 state lights[10];
-bool inTransition, entertainmentRun, useDhcp = true;
+bool inTransition, entertainmentRun, mosftetState, useDhcp = true;
 byte mac[6], packetBuffer[46];
 unsigned long lastEPMillis;
 
@@ -284,6 +285,22 @@ RgbColor convFloat(float color[3]) { // return RgbColor from float
 }
 
 
+void cutPower() {
+  bool any_on = false;
+  for (int light = 0; light < lightsCount; light++) {
+    if (lights[light].lightState) {
+      any_on = true;
+    }
+  }
+  if (!any_on && !inTransition && mosftetState) {
+    digitalWrite(POWER_MOSFET_PIN, LOW);
+    mosftetState = false;
+  } else if (any_on && !mosftetState){
+    digitalWrite(POWER_MOSFET_PIN, HIGH);
+    mosftetState = true;
+  }
+}
+
 void lightEngine() {  // core function executed in loop()
   for (int light = 0; light < lightsCount; light++) { // loop with every virtual light
     if (lights[light].lightState) { // if light in on
@@ -388,6 +405,7 @@ void lightEngine() {  // core function executed in loop()
       }
     }
   }
+  cutPower(); // if all lights are off GPIO12 can cut the power to the strip using a powerful P-Channel MOSFET
   if (inTransition) { // wait 6ms for a nice transition effect
     delay(6);
     inTransition = false; // set inTransition bash to false (will be set bach to true on next level execution if desired state is not reached)
@@ -552,7 +570,7 @@ bool loadConfig() { // load the configuration from SPIFFS partition
   }
 
   if (configFile.size() > 1024) {
-    Serial.println("Config file size is too large");
+    //Serial.println("Config file size is too large");
     return false;
   }
 
@@ -598,9 +616,12 @@ void ChangeNeoPixels(uint16_t newCount) // this set the number of leds of the st
 }
 
 void setup() {
-  Serial.begin(115200);
-  Serial.println();
+  //Serial.begin(115200);
+  //Serial.println();
   delay(1000);
+
+  pinMode(POWER_MOSFET_PIN, OUTPUT);
+  digitalWrite(POWER_MOSFET_PIN, HIGH); mosftetState = true; // reuired if HIGH logic power the strip, otherwise must be commented.
 
   //Serial.println("mounting FS...");
 
@@ -683,7 +704,7 @@ void setup() {
     pinMode(onPin, INPUT);
     pinMode(offPin, INPUT);
   }
-
+  
   server.on("/state", HTTP_PUT, []() { // HTTP PUT request used to set a new light state
     bool stateSave = false;
     DynamicJsonDocument root(1024);
