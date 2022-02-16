@@ -33,7 +33,7 @@
    },
    "ws2812_gradient":{
       "version":4.0,
-      "filename":"Gradient_Strip_WS2812.bin"
+      "filename":"Gradient_TV_Strip_WS2812.bin"
    },
    "SonoffTXT3US1C":{
       "version":2.1,
