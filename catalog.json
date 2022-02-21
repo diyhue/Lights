@@ -46,5 +46,13 @@
    "SonoffTXT3US3C":{
       "version":2.1,
       "filename":"SonoffTXT3US3C.bin"
+   },
+   "GradientLightstrip":{
+     "version":4.0,
+     "filname": "Hue_Gradient_Lightstrip.bin"
+   },
+   "SigneGradient":{
+     "version":4.0,
+     "filname": "Hue_Signe_Gradient.bin"
    }
 }
