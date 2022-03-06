@@ -756,7 +756,7 @@ void setup() {
     DynamicJsonDocument root(1024);
     root["name"] = lightName;
     root["protocol"] = "native_single";
-    root["modelid"] = "915005106701";
+    root["modelid"] = "LCX004";
     root["type"] = "ws2812_gradient_lightstrip";
     root["mac"] = String(macString);
     root["version"] = LIGHT_VERSION;
