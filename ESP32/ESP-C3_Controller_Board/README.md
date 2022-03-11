@@ -6,5 +6,8 @@
  - Two buttons that allow to control the power (short press) , brightness (long press), factory reset (both buttons pressed) and to enter FLASH MODE at boot.
  - Led indicator for WiFi connectivity (the led turn off once wifi connection is established and will blink when connection is lost).
  - 2.4GHz Chip Antenna.
+
+STL files for 3D printed case provided
+ ![3D Case](https://github.com/diyhue/Lights/raw/master/ESP32/ESP-C3_Controller_Board/3DPrintedCase.png)
  
 This work is licensed under a Creative Commons Attribution-NonCommercial 3.0 Unported (CC BY-NC 3.0) International License.
