@@ -1,37 +1,37 @@
 {
-   "esp8266-cct":{
+   "cct":{
       "version":2.0,
       "filename":"Generic_CCT_Light.bin"
    },
-   "esp8266-rgb-cct":{
+   "rgb-cct":{
       "version":2.0,
       "filename":"Generic_RGB_CCT_Light.bin"
    },
-   "esp8266-rgbw":{
+   "rgbw":{
       "version":2.0,
       "filename":"Generic_RGBW_Light.bin"
    },
-   "esp8266-dimmable":{
+   "dimmable":{
       "version":2.0,
       "filename":"Generic_Dimmable_Light.bin"
    },
-   "esp8266-on_off":{
+   "on_off":{
       "version":2.0,
       "filename":"Generic_ON_OFF_Light.bin"
    },
-   "esp8266-rgb":{
+   "rgb":{
       "version":3.0,
       "filename":"Generic_RGB_Light.bin"
    },
-   "esp8266-ws2812_strip":{
+   "ws2812_strip":{
       "version":3.1,
       "filename":"Generic_WS2812_Strip.bin"
    },
-   "esp8266-sk6812_strip":{
+   "sk6812_strip":{
       "version":2.0,
       "filename":"Generic_SK6812_Strip.bin"
    },
-   "esp8266-ws2812_gradient":{
+   "ws2812_gradient":{
       "version":4.0,
       "filename":"Gradient_TV_Strip_WS2812.bin"
    },
@@ -47,11 +47,11 @@
       "version":2.1,
       "filename":"SonoffTXT3US3C.bin"
    },
-   "esp8266-gradient-lightstrip":{
+   "gradient-lightstrip":{
      "version":4.0,
      "filname": "Hue_Gradient_Lightstrip.bin"
    },
-   "esp8266-signe-gradient":{
+   "signe-gradient":{
      "version":4.0,
      "filname": "Hue_Signe_Gradient.bin"
    }
