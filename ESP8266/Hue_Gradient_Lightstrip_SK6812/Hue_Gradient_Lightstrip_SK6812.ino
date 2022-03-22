@@ -30,7 +30,7 @@ byte mac[6], packetBuffer[46];
 unsigned long lastEPMillis;
 
 //settings
-char lightName[LIGHT_NAME_MAX_LENGTH] = "DiyHue Signe Gradient";
+char lightName[LIGHT_NAME_MAX_LENGTH] = "DiyHue Gradient Lightstip";
 uint8_t effect, scene, startup, onPin = 4, offPin = 5;
 bool hwSwitch = false;
 uint8_t rgb_multiplier[] = {100, 100, 100}; // light multiplier in percentage /R, G, B/
@@ -47,7 +47,7 @@ WiFiManager wm;
 
 RgbwColor red = RgbwColor(255, 0, 0, 0);
 RgbwColor green = RgbwColor(0, 255, 0, 0);
-RgbwColor white = RgbwColor(255);
+RgbwColor white = RgbwColor(0,0,0,255);
 RgbwColor black = RgbwColor(0);
 
 NeoPixelBus<NeoGrbwFeature, NeoSk6812Method>* strip = NULL;
@@ -185,7 +185,7 @@ void convertXy(uint8_t light) // convert CIE xy values from HUE API to RGB
 void convertCt(uint8_t light) {
   lights[light].colors[3] = lights[light].bri;
   int hectemp = 10000 / lights[light].ct;
-  int r, g, b;
+  uint8_t r, g, b;
   if (hectemp <= 66) {
     r = 255;
     g = 99.4708025861 * log(hectemp) - 161.1195681661;
@@ -198,6 +198,12 @@ void convertCt(uint8_t light) {
   r = r > 255 ? 255 : r;
   g = g > 255 ? 255 : g;
   b = b > 255 ? 255 : b;
+
+  // Apply multiplier for white correction
+  r = r * rgb_multiplier[0] / 100;
+  g = g * rgb_multiplier[1] / 100;
+  b = b * rgb_multiplier[2] / 100;
+
   lights[light].colors[0] = r * (lights[light].bri / 255.0f); lights[light].colors[1] = g * (lights[light].bri / 255.0f); lights[light].colors[2] = b * (lights[light].bri / 255.0f);
 }
 
