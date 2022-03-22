@@ -30,7 +30,7 @@ byte mac[6], packetBuffer[46];
 unsigned long lastEPMillis;
 
 //settings
-char lightName[LIGHT_NAME_MAX_LENGTH] = "DiyHue Signe Gradient";
+char lightName[LIGHT_NAME_MAX_LENGTH] = "DiyHue Gradient LightStrip";
 uint8_t effect, scene, startup, onPin = 4, offPin = 5;
 bool hwSwitch = false;
 uint8_t rgb_multiplier[] = {100, 100, 100}; // light multiplier in percentage /R, G, B/
