@@ -651,7 +651,7 @@ void setup() {
       lightEngine();
     }
   }
-  WiFi.mode(WIFI_AP_STA);
+  WiFi.mode(WIFI_STA);
   wm.setConfigPortalTimeout(120);
   if (!useDhcp) {
     wm.setSTAStaticIPConfig(address, gateway, submask);
