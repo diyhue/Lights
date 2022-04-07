@@ -332,6 +332,17 @@ bool nextLightUpdate(uint8_t light) {
   return false;
 }
 
+
+bool nextLightOff(uint8_t light) {
+  if (light + 1 < lightsCount) {
+    uint8_t nextLight = light + 1;
+    if (lights[nextLight].currentColors[0] != 0 || lights[nextLight].currentColors[1] != 0 || lights[nextLight].currentColors[2] != 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void lightEngine() {  // core function executed in loop()
   for (uint8_t light = 0; light < lightsCount; light++) { // loop with every virtual light
     if (lights[light].lightState) { // if light in on
@@ -363,7 +374,7 @@ void lightEngine() {  // core function executed in loop()
         strip->Show(); //show what was calculated previously
       }
     } else { // if light in off, calculate the dimming effect only
-      if (lights[light].currentColors[0] != 0 || lights[light].currentColors[1] != 0 || lights[light].currentColors[2] != 0) { // proceed forward only in case not all RGB channels are zero
+      if ((lights[light].currentColors[0] != 0 || lights[light].currentColors[1] != 0 || lights[light].currentColors[2] != 0) || nextLightUpdate(light)) { // proceed forward only in case not all RGB channels are zero
         inTransition = true;
         for (uint8_t k = 0; k < 3; k++) { //loop with every RGB channel
           if (lights[light].currentColors[k] != 0) lights[light].currentColors[k] -= lights[light].stepLevel[k]; // remove one step level
@@ -651,7 +662,7 @@ void setup() {
       lightEngine();
     }
   }
-  WiFi.mode(WIFI_AP_STA);
+  WiFi.mode(WIFI_STA);
   wm.setConfigPortalTimeout(120);
   if (!useDhcp) {
     wm.setSTAStaticIPConfig(address, gateway, submask);

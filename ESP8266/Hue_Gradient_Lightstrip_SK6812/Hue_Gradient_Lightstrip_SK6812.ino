@@ -30,7 +30,7 @@ byte mac[6], packetBuffer[46];
 unsigned long lastEPMillis;
 
 //settings
-char lightName[LIGHT_NAME_MAX_LENGTH] = "DiyHue Signe Gradient";
+char lightName[LIGHT_NAME_MAX_LENGTH] = "DiyHue Gradient LightStrip";
 uint8_t effect, scene, startup, onPin = 4, offPin = 5;
 bool hwSwitch = false;
 uint8_t rgb_multiplier[] = {100, 100, 100}; // light multiplier in percentage /R, G, B/
@@ -185,7 +185,7 @@ void convertXy(uint8_t light) // convert CIE xy values from HUE API to RGB
 void convertCt(uint8_t light) {
   lights[light].colors[3] = lights[light].bri;
   int hectemp = 10000 / lights[light].ct;
-  int r, g, b;
+  uint8_t r, g, b;
   if (hectemp <= 66) {
     r = 255;
     g = 99.4708025861 * log(hectemp) - 161.1195681661;
@@ -267,7 +267,7 @@ void processLightdata(uint8_t light, float transitiontime = 4) { // calculate th
   } else if (lights[light].colorMode == 3 && lights[light].lightState == true) {
     convertHue(light);
   }
-  for (uint8_t i = 0; i < 3; i++) {
+  for (uint8_t i = 0; i < 4; i++) {
     if (lights[light].lightState) {
       lights[light].stepLevel[i] = ((float)lights[light].colors[i] - lights[light].currentColors[i]) / transitiontime;
     } else {
@@ -651,7 +651,7 @@ void setup() {
       lightEngine();
     }
   }
-  WiFi.mode(WIFI_AP_STA);
+  WiFi.mode(WIFI_STA);
   wm.setConfigPortalTimeout(120);
   if (!useDhcp) {
     wm.setSTAStaticIPConfig(address, gateway, submask);
