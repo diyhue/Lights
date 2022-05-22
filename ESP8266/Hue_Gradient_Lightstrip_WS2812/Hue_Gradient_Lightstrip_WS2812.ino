@@ -12,17 +12,21 @@ IPAddress address ( 192,  168,   0,  95); // choose an unique IP Adress
 IPAddress gateway ( 192,  168,   0,   1); // Router IP
 IPAddress submask(255, 255, 255,   0);
 
-#define LIGHT_VERSION 4.1
+#define LIGHT_VERSION 4.2
 #define LIGHT_NAME_MAX_LENGTH 32 // Longer name will get stripped
 #define ENTERTAINMENT_TIMEOUT 1500 // millis
 #define POWER_MOSFET_PIN 13 // WS2812 consume ~1mA/led when off. By installing a MOSFET it will cut the power to the leds when lights ore off.
 
+
+
 struct state {
-  uint8_t colors[3], bri = 100, sat = 254, colorMode = 2;
-  bool lightState;
-  int ct = 200, hue;
-  float stepLevel[3], currentColors[3], x, y;
+  uint8_t colors[3];
+  float x, y, stepLevel[3], currentColors[3];
 };
+
+uint16_t ct = 200, hue;
+bool lightState;
+uint8_t bri = 100, sat = 254, colorMode = 2;
 
 state lights[10];
 bool inTransition, entertainmentRun, mosftetState, useDhcp = true;
@@ -66,8 +70,8 @@ void convertHue(uint8_t light) // convert hue / sat values from HUE API to RGB
   double      hh, p, q, t, ff, s, v;
   long        i;
 
-  s = lights[light].sat / 255.0;
-  v = lights[light].bri / 255.0;
+  s = sat / 255.0;
+  v = bri / 255.0;
 
   if (s <= 0.0) {      // < is bogus, just shuts up warnings
     lights[light].colors[0] = v;
@@ -75,7 +79,7 @@ void convertHue(uint8_t light) // convert hue / sat values from HUE API to RGB
     lights[light].colors[2] = v;
     return;
   }
-  hh = lights[light].hue;
+  hh = hue;
   if (hh >= 65535.0) hh = 0.0;
   hh /= 11850, 0;
   i = (long)hh;
@@ -123,7 +127,7 @@ void convertHue(uint8_t light) // convert hue / sat values from HUE API to RGB
 
 void convertXy(uint8_t light) // convert CIE xy values from HUE API to RGB
 {
-  uint8_t optimal_bri = lights[light].bri;
+  uint8_t optimal_bri = bri;
   if (optimal_bri < 5) {
     optimal_bri = 5;
   }
@@ -181,7 +185,7 @@ void convertXy(uint8_t light) // convert CIE xy values from HUE API to RGB
 
 void convertCt(uint8_t light) // convert ct (color temperature) value from HUE API to RGB
 {
-  int hectemp = 10000 / lights[light].ct;
+  int hectemp = 10000 / ct;
   uint8_t r, g, b;
   if (hectemp <= 66) {
     r = 255;
@@ -202,7 +206,7 @@ void convertCt(uint8_t light) // convert ct (color temperature) value from HUE A
   g = g * rgb_multiplier[1] / 100;
   b = b * rgb_multiplier[2] / 100;
 
-  lights[light].colors[0] = r * (lights[light].bri / 255.0f); lights[light].colors[1] = g * (lights[light].bri / 255.0f); lights[light].colors[2] = b * (lights[light].bri / 255.0f);
+  lights[light].colors[0] = r * (bri / 255.0f); lights[light].colors[1] = g * (bri / 255.0f); lights[light].colors[2] = b * (bri / 255.0f);
 }
 
 void handleNotFound() { // default webserver response for unknow requests
@@ -236,47 +240,48 @@ void infoLight(RgbColor color) { // boot animation for leds count and wifi test
 void apply_scene(uint8_t new_scene) { // these are internal scenes store in light firmware that can be applied on boot and manually from light web interface
   for (uint8_t light = 0; light < lightsCount; light++) {
     if ( new_scene == 1) {
-      lights[light].bri = 254; lights[light].ct = 346; lights[light].colorMode = 2; convertCt(light);
+      bri = 254; ct = 346; colorMode = 2; convertCt(light);
     } else if ( new_scene == 2) {
-      lights[light].bri = 254; lights[light].ct = 233; lights[light].colorMode = 2; convertCt(light);
+      bri = 254; ct = 233; colorMode = 2; convertCt(light);
     }  else if ( new_scene == 3) {
-      lights[light].bri = 254; lights[light].ct = 156; lights[light].colorMode = 2; convertCt(light);
+      bri = 254; ct = 156; colorMode = 2; convertCt(light);
     }  else if ( new_scene == 4) {
-      lights[light].bri = 77; lights[light].ct = 367; lights[light].colorMode = 2; convertCt(light);
+      bri = 77; ct = 367; colorMode = 2; convertCt(light);
     }  else if ( new_scene == 5) {
-      lights[light].bri = 254; lights[light].ct = 447; lights[light].colorMode = 2; convertCt(light);
+      bri = 254; ct = 447; colorMode = 2; convertCt(light);
     }  else if ( new_scene == 6) {
-      lights[light].bri = 1; lights[light].x = 0.561; lights[light].y = 0.4042; lights[light].colorMode = 1; convertXy(light);
+      bri = 1; lights[light].x = 0.561; lights[light].y = 0.4042; colorMode = 1; convertXy(light);
     }  else if ( new_scene == 7) {
-      lights[light].bri = 203; lights[light].x = 0.380328; lights[light].y = 0.39986; lights[light].colorMode = 1; convertXy(light);
+      bri = 203; lights[light].x = 0.380328; lights[light].y = 0.39986; colorMode = 1; convertXy(light);
     }  else if ( new_scene == 8) {
-      lights[light].bri = 112; lights[light].x = 0.359168; lights[light].y = 0.28807; lights[light].colorMode = 1; convertXy(light);
+      bri = 112; lights[light].x = 0.359168; lights[light].y = 0.28807; colorMode = 1; convertXy(light);
     }  else if ( new_scene == 9) {
-      lights[light].bri = 142; lights[light].x = 0.267102; lights[light].y = 0.23755; lights[light].colorMode = 1; convertXy(light);
+      bri = 142; lights[light].x = 0.267102; lights[light].y = 0.23755; colorMode = 1; convertXy(light);
     }  else if ( new_scene == 10) {
-      lights[light].bri = 216; lights[light].x = 0.393209; lights[light].y = 0.29961; lights[light].colorMode = 1; convertXy(light);
+      bri = 216; lights[light].x = 0.393209; lights[light].y = 0.29961; colorMode = 1; convertXy(light);
     } else {
-      lights[light].bri = 144; lights[light].ct = 447; lights[light].colorMode = 2; convertCt(light);
+      bri = 144; ct = 447; colorMode = 2; convertCt(light);
     }
   }
 }
 
 void processLightdata(uint8_t light, float transitiontime = 4) { // calculate the step level of every RGB channel for a smooth transition in requested transition time
   transitiontime *= 17 - (pixelCount / 40); //every extra led add a small delay that need to be counted for transition time match
-  if (lights[light].colorMode == 1 && lights[light].lightState == true) {
+  if (colorMode == 1 && lightState == true) {
     convertXy(light);
-  } else if (lights[light].colorMode == 2 && lights[light].lightState == true) {
+  } else if (colorMode == 2 && lightState == true) {
     convertCt(light);
-  } else if (lights[light].colorMode == 3 && lights[light].lightState == true) {
+  } else if (colorMode == 3 && lightState == true) {
     convertHue(light);
   }
   for (uint8_t i = 0; i < 3; i++) {
-    if (lights[light].lightState) {
+    if (lightState) {
       lights[light].stepLevel[i] = ((float)lights[light].colors[i] - lights[light].currentColors[i]) / transitiontime;
     } else {
       lights[light].stepLevel[i] = lights[light].currentColors[i] / transitiontime;
     }
   }
+  inTransition = true;
 }
 
 
@@ -289,10 +294,11 @@ void candleEffect() {
       lights[light].stepLevel[i] = ((float)lights[light].colors[i] - lights[light].currentColors[i]) / random(5, 15);
     }
   }
+  inTransition = true;
 }
 
 void firePlaceEffect() {
-    for (uint8_t light = 0; light < lightsCount; light++) {
+  for (uint8_t light = 0; light < lightsCount; light++) {
     lights[light].colors[0] = random(100, 254);
     lights[light].colors[1] = random(10, 35);
     lights[light].colors[2] = 0;
@@ -300,192 +306,152 @@ void firePlaceEffect() {
       lights[light].stepLevel[i] = ((float)lights[light].colors[i] - lights[light].currentColors[i]) / random(5, 15);
     }
   }
+  inTransition = true;
 }
 
 RgbColor convFloat(float color[3]) { // return RgbColor from float
   return RgbColor((uint8_t)color[0], (uint8_t)color[1], (uint8_t)color[2]);
 }
 
-void cutPower() {
-  bool any_on = false;
-  for (uint8_t light = 0; light < lightsCount; light++) {
-    if (lights[light].lightState) {
-      any_on = true;
-    }
-  }
-  if (!any_on && !inTransition && mosftetState) {
+void togglePower() {
+
+  if (!lightState && !inTransition && mosftetState) {
     digitalWrite(POWER_MOSFET_PIN, LOW);
     mosftetState = false;
-  } else if (any_on && !mosftetState) {
+  } else if (lightState && !mosftetState) {
     digitalWrite(POWER_MOSFET_PIN, HIGH);
     mosftetState = true;
+    delay(50);
   }
 }
 
-bool nextLightUpdate(uint8_t light) {
-  if (light + 1 < lightsCount) {
-    uint8_t nextLight = light + 1;
-    if (lights[nextLight].colors[0] != lights[nextLight].currentColors[0] || lights[nextLight].colors[1] != lights[nextLight].currentColors[1] || lights[nextLight].colors[2] != lights[nextLight].currentColors[2]) {
-      return true;
+
+uint8_t pixelLight (uint8_t pixel) {
+  return int(pixel / lightLedsCount);
+}
+
+void manageButtons() {
+  if (digitalRead(onPin) == LOW) { // on button pressed
+    uint8_t i = 0;
+    while (digitalRead(onPin) == LOW && i < 30) { // count how log is the button pressed
+      delay(20);
+      i++;
     }
-  }
-  return false;
-}
-
-
-bool nextLightOff(uint8_t light) {
-  if (light + 1 < lightsCount) {
-    uint8_t nextLight = light + 1;
-    if (lights[nextLight].currentColors[0] != 0 || lights[nextLight].currentColors[1] != 0 || lights[nextLight].currentColors[2] != 0) {
-      return true;
-    }
-  }
-  return false;
-}
-
-void lightEngine() {  // core function executed in loop()
-  for (uint8_t light = 0; light < lightsCount; light++) { // loop with every virtual light
-    if (lights[light].lightState) { // if light in on
-      if ((lights[light].colors[0] != lights[light].currentColors[0] || lights[light].colors[1] != lights[light].currentColors[1] || lights[light].colors[2] != lights[light].currentColors[2]) || nextLightUpdate(light)) { // if not all RGB channels of the light are at desired level
-        inTransition = true;
-        for (uint8_t k = 0; k < 3; k++) { // loop with every RGB channel of the light
-          if (lights[light].colors[k] != lights[light].currentColors[k]) lights[light].currentColors[k] += lights[light].stepLevel[k]; // move RGB channel on step closer to desired level
-          if ((lights[light].stepLevel[k] > 0.0 && lights[light].currentColors[k] > lights[light].colors[k]) || (lights[light].stepLevel[k] < 0.0 && lights[light].currentColors[k] < lights[light].colors[k])) lights[light].currentColors[k] = lights[light].colors[k]; // if the current level go below desired level apply directly the desired level.
-        }
-        if (lightsCount > 1) {
-          if (light == 0) {
-            if (lightsCount == 2) {
-              for (uint8_t pixel = 0; pixel < pixelCount; pixel++) {
-                strip->SetPixelColor(pixel, RgbColor::LinearBlend(convFloat(lights[0].currentColors), convFloat(lights[1].currentColors),  (float)(pixel) / (float)pixelCount));
-              }
-            } else {
-              for (uint8_t pixel = 0; pixel < lightLedsCount; pixel++) {
-                strip->SetPixelColor(pixel, RgbColor::LinearBlend(convFloat(lights[0].currentColors), convFloat(lights[1].currentColors),  (float)(pixel) / (float)lightLedsCount));
-              }
-            }
-          } else if (light != lightsCount - 1) {
-            for (uint8_t pixel = 0; pixel < lightLedsCount ; pixel++) {
-              strip->SetPixelColor(pixel + lightLedsCount * light, RgbColor::LinearBlend(convFloat(lights[light].currentColors), convFloat(lights[light + 1].currentColors), (float)(pixel) / (float)lightLedsCount));
-            }
-          }
-        } else {
-          strip->ClearTo(convFloat(lights[light].currentColors), 0, pixelCount - 1);
-        }
-        strip->Show(); //show what was calculated previously
-      }
-    } else { // if light in off, calculate the dimming effect only
-      if ((lights[light].currentColors[0] != 0 || lights[light].currentColors[1] != 0 || lights[light].currentColors[2] != 0) || nextLightUpdate(light)) { // proceed forward only in case not all RGB channels are zero
-        inTransition = true;
-        for (uint8_t k = 0; k < 3; k++) { //loop with every RGB channel
-          if (lights[light].currentColors[k] != 0) lights[light].currentColors[k] -= lights[light].stepLevel[k]; // remove one step level
-          if (lights[light].currentColors[k] < 0) lights[light].currentColors[k] = 0; // save condition, if level go below zero set it to zero
-        }
-        if (lightsCount > 1) { // if the strip has more than one light
-
-          if (light == 0) {
-            if (lightsCount == 2) {
-              for (uint8_t pixel = 0; pixel < pixelCount; pixel++) {
-                strip->SetPixelColor(pixel, RgbColor::LinearBlend(convFloat(lights[0].currentColors), convFloat(lights[1].currentColors),  (float)(pixel) / (float)pixelCount));
-              }
-            } else {
-              for (uint8_t pixel = 0; pixel < lightLedsCount; pixel++) {
-                strip->SetPixelColor(pixel, RgbColor::LinearBlend(convFloat(lights[0].currentColors), convFloat(lights[1].currentColors),  (float)(pixel) / (float)lightLedsCount));
-              }
-            }
-          } else if (light != lightsCount - 1) {
-            for (uint8_t pixel = 0; pixel < lightLedsCount ; pixel++) {
-              strip->SetPixelColor(pixel + lightLedsCount * light, RgbColor::LinearBlend(convFloat(lights[light].currentColors), convFloat(lights[light + 1].currentColors), (float)(pixel) / (float)lightLedsCount));
-            }
-          }
-        } else {
-          strip->ClearTo(convFloat(lights[light].currentColors), 0, pixelCount - 1);
-        }
-        strip->Show(); //show what was calculated previously
+    // factory reset if onPin also pressed
+    if (i == 30 && digitalRead(offPin) == LOW) {
+      delay(2000);
+      if (digitalRead(onPin) == LOW && digitalRead(offPin) == LOW) {
+        factoryReset();
       }
     }
+    for (uint8_t light = 0; light < lightsCount; light++) {
+      if (i < 30) { // there was a short press
+        togglePower();
+        lightState = true;
+      }
+      else { // there was a long press
+        if (bri < 210) {
+          bri += 30;
+        } else {
+          bri = 254;
+        }
+      }
+      processLightdata(light);
+    }
+  } else if (digitalRead(offPin) == LOW) { // off button pressed
+    uint8_t i = 0;
+    while (digitalRead(offPin) == LOW && i < 30) {
+      delay(20);
+      i++;
+    }
+    for (uint8_t light = 0; light < lightsCount; light++) {
+      if (i < 30) {
+        // there was a short press
+        lightState = false;
+      }
+      else {
+        // there was a long press
+        if (bri > 32) {
+          bri -= 30;
+        } else {
+          bri = 1;
+        }
+
+      }
+      processLightdata(light);
+    }
   }
-  cutPower(); // can be commented if mosfet power is not used
-  if (inTransition) { // wait 6ms for a nice transition effect
-    delay(1);
-    inTransition = false; // set inTransition bash to false (will be set bach to true on next level execution if desired state is not reached)
+}
+
+void lightEngine() {
+  if (inTransition) {
+    if (lightsCount == 1) {
+      strip->ClearTo(convFloat(lights[0].currentColors), 0, pixelCount - 1);
+    } else {
+      for (uint8_t pixel = 0; pixel < pixelCount; pixel++) {
+        uint8_t light = pixelLight(pixel);
+        strip->SetPixelColor(pixel, RgbColor::LinearBlend(convFloat(lights[light].currentColors), convFloat(lights[light + 1].currentColors), (float)(pixel - (light * lightLedsCount)) / (float)lightLedsCount));
+      }
+    }
+    strip->Show();
+    bool allStatesSet = true;
+    for (uint8_t light = 0; light < lightsCount; light++) {
+      if (lightState) {
+        if (lights[light].colors[0] != lights[light].currentColors[0] || lights[light].colors[1] != lights[light].currentColors[1] || lights[light].colors[2] != lights[light].currentColors[2]) { // if not all RGB channels of the light are at desired level
+          for (uint8_t k = 0; k < 3; k++) { // loop with every RGB channel of the light
+            if (lights[light].colors[k] != lights[light].currentColors[k]) lights[light].currentColors[k] += lights[light].stepLevel[k]; // move RGB channel on step closer to desired level
+            if ((lights[light].stepLevel[k] > 0.0 && lights[light].currentColors[k] > lights[light].colors[k]) || (lights[light].stepLevel[k] < 0.0 && lights[light].currentColors[k] < lights[light].colors[k])) lights[light].currentColors[k] = lights[light].colors[k]; // if the current level go below desired level apply directly the desired level.
+          }
+          allStatesSet = false;
+        }
+      } else {
+        if (lights[light].currentColors[0] != 0 || lights[light].currentColors[1] != 0 || lights[light].currentColors[2] != 0) { // proceed forward only in case not all RGB channels are zero
+          for (uint8_t k = 0; k < 3; k++) { //loop with every RGB channel
+            if (lights[light].currentColors[k] != 0) lights[light].currentColors[k] -= lights[light].stepLevel[k]; // remove one step level
+            if (lights[light].currentColors[k] < 0) lights[light].currentColors[k] = 0; // save condition, if level go below zero set it to zero
+          }
+          allStatesSet = false;
+        }
+      }
+    }
+    if (allStatesSet) {
+      inTransition = false;
+    }
+    delay(5);
   } else {
+    togglePower();
     if (effect == 1) { // candle effect
       candleEffect();
     } else if (effect == 2) { // fireplace effect
       firePlaceEffect();
     }
-    if (hwSwitch == true) { // if you want to use some GPIO's for on/off and brightness controll
-      if (digitalRead(onPin) == LOW) { // on button pressed
-        uint8_t i = 0;
-        while (digitalRead(onPin) == LOW && i < 30) { // count how log is the button pressed
-          delay(20);
-          i++;
-        }
-        // factory reset if onPin also pressed
-        if (i == 30 && digitalRead(offPin) == LOW) {
-          delay(2000);
-          if (digitalRead(onPin) == LOW && digitalRead(offPin) == LOW) {
-            factoryReset();
-          }
-        }
-        for (uint8_t light = 0; light < lightsCount; light++) {
-          if (i < 30) { // there was a short press
-            lights[light].lightState = true;
-          }
-          else { // there was a long press
-            if (lights[light].bri < 198) {
-              lights[light].bri += 56;
-            } else {
-              lights[light].bri = 254;
-            }
-            processLightdata(light);
-          }
-        }
-      } else if (digitalRead(offPin) == LOW) { // off button pressed
-        uint8_t i = 0;
-        while (digitalRead(offPin) == LOW && i < 30) {
-          delay(20);
-          i++;
-        }
-        for (uint8_t light = 0; light < lightsCount; light++) {
-          if (i < 30) {
-            // there was a short press
-            lights[light].lightState = false;
-          }
-          else {
-            // there was a long press
-            if (lights[light].bri > 57) {
-              lights[light].bri -= 56;
-            } else {
-              lights[light].bri = 1;
-            }
-            processLightdata(light);
-          }
-        }
-      }
+    if (hwSwitch == true) {
+      manageButtons();
     }
   }
 }
 
 void saveState() { // save the lights state on LittleFS partition in JSON format
   DynamicJsonDocument json(1024);
-  for (uint8_t i = 0; i < lightsCount; i++) {
-    JsonObject light = json.createNestedObject((String)i);
-    light["on"] = lights[i].lightState;
-    light["bri"] = lights[i].bri;
-    if (lights[i].colorMode == 1) {
-      light["x"] = lights[i].x;
-      light["y"] = lights[i].y;
-    } else if (lights[i].colorMode == 2) {
-      light["ct"] = lights[i].ct;
-    } else if (lights[i].colorMode == 3) {
-      light["hue"] = lights[i].hue;
-      light["sat"] = lights[i].sat;
+  json["on"] = lightState;
+  json["bri"] = bri;
+  if (colorMode == 2) {
+    json["ct"] = ct;
+  } else if (colorMode == 3) {
+    json["hue"] = hue;
+    json["sat"] = sat;
+  }
+  if (colorMode == 1) {
+    JsonArray points = json.createNestedArray("points");
+    for (uint8_t i = 0; i < lightsCount; i++) {
+      DynamicJsonDocument point(128);
+      point["x"] = lights[i].x;
+      point["y"] = lights[i].y;
+      points.add(point);
     }
   }
   File stateFile = LittleFS.open("/state.json", "w");
   serializeJson(json, stateFile);
-
 }
 
 void restoreState() { // restore the lights state from LittleFS partition
@@ -498,32 +464,31 @@ void restoreState() { // restore the lights state from LittleFS partition
   DynamicJsonDocument json(1024);
   DeserializationError error = deserializeJson(json, stateFile.readString());
   if (error) {
-    //Serial.println("Failed to parse config file");
+    //Serial.println("Failed to parse state file");
     return;
   }
-  for (JsonPair state : json.as<JsonObject>()) {
-    const char* key = state.key().c_str();
-    uint8_t lightId = atoi(key);
-    JsonObject values = state.value();
-    lights[lightId].lightState = values["on"];
-    lights[lightId].bri = (uint8_t)values["bri"];
-    if (values.containsKey("x")) {
-      lights[lightId].x = values["x"];
-      lights[lightId].y = values["y"];
-      lights[lightId].colorMode = 1;
-    } else if (values.containsKey("ct")) {
-      lights[lightId].ct = values["ct"];
-      lights[lightId].colorMode = 2;
-    } else {
-      if (values.containsKey("hue")) {
-        lights[lightId].hue = values["hue"];
-        lights[lightId].colorMode = 3;
-      }
-      if (values.containsKey("sat")) {
-        lights[lightId].sat = (uint8_t) values["sat"];
-        lights[lightId].colorMode = 3;
-      }
+  String output;
+  serializeJson(json, output);
+  //Serial.println(output);
+  lightState = json["on"];
+  bri = (uint8_t) json["bri"];
+  if (json.containsKey("ct")) {
+    ct = (uint16_t) json["ct"];
+    colorMode = 2;
+  } else if (json.containsKey("hue")) {
+    hue = (uint16_t) json["hue"];
+    sat = (uint8_t) json["sat"];
+    colorMode = 3;
+  } else if (json.containsKey("points")) {
+
+    lightsCount = 0;
+    for (JsonObject point : json["points"].as<JsonArray>()) {
+      lights[lightsCount].x = point["x"];
+      lights[lightsCount].y = point["y"];
+      lightsCount += 1;
     }
+    lightLedsCount = pixelCount / (lightsCount - 1);
+    colorMode = 1;
   }
 }
 
@@ -571,12 +536,6 @@ bool loadConfig() { // load the configuration from LittleFS partition
   if (!configFile) {
     //Serial.println("Create new file with default values");
     return saveConfig();
-  }
-
-  size_t size = configFile.size();
-  if (size > 1024) {
-    //Serial.println("Config file size is too large");
-    return false;
   }
 
   if (configFile.size() > 1024) {
@@ -640,29 +599,39 @@ void setup() {
     //Serial.println("Config loaded");
   }
 
-
   ChangeNeoPixels(pixelCount);
   lightLedsCount = pixelCount / (lightsCount - 1);
 
   if (startup == 1) {
-    for (uint8_t i = 0; i < lightsCount; i++) {
-      lights[i].lightState = true;
-    }
+    lightState = true;
   }
   if (startup == 0) {
     restoreState();
   } else {
     apply_scene(scene);
   }
+
   for (uint8_t i = 0; i < lightsCount; i++) {
     processLightdata(i);
   }
-  if (lights[0].lightState) {
+  if (lightState) {
     for (uint8_t i = 0; i < 200; i++) {
       lightEngine();
     }
   }
+
+
+  if (hwSwitch == true) { // set buttons pins mode in case are used
+    pinMode(onPin, INPUT);
+    pinMode(offPin, INPUT);
+  }
+
+  if (digitalRead(offPin) == LOW) {
+    factoryReset();
+  }
+
   WiFi.mode(WIFI_STA);
+  wm.setDebugOutput(false);
   wm.setConfigPortalTimeout(120);
   if (!useDhcp) {
     wm.setSTAStaticIPConfig(address, gateway, submask);
@@ -682,7 +651,7 @@ void setup() {
   }
 
 
-  if (! lights[0].lightState) { // test if light zero (must be at last one light) is not set to ON
+  if (! lightState) { // test if light zero (must be at last one light) is not set to ON
     infoLight(white); // play white anymation
     while (WiFi.status() != WL_CONNECTED) { // connection to wifi still not ready
       infoLight(red); // play red animation
@@ -702,11 +671,6 @@ void setup() {
   httpUpdateServer.setup(&server); // start http server
 
   Udp.begin(2100); // start entertainment UDP server
-
-  if (hwSwitch == true) { // set buttons pins mode in case are used
-    pinMode(onPin, INPUT);
-    pinMode(offPin, INPUT);
-  }
 
   server.on("/state", HTTP_PUT, []() { // HTTP PUT request used to set a new light state
     bool stateSave = false;
@@ -729,81 +693,79 @@ void setup() {
         if (root["gradient"].containsKey("points")) {
           lightsCount = root["gradient"]["points"].size();
           lightLedsCount = pixelCount / (lightsCount - 1);
+          for (uint8_t light = 0; light < lightsCount; light++) {
+            if (root["gradient"]["points"][light]["color"].containsKey("xy")) {
+              lights[light].x = root["gradient"]["points"][light]["color"]["xy"]["x"];
+              lights[light].y = root["gradient"]["points"][light]["color"]["xy"]["y"];
+            }
+          }
+          colorMode = 1;
         }
       }
-      for (uint8_t light = 0; light < lightsCount; light++) {
-        uint16_t transitiontime = 4;
-        if (root.containsKey("gradient")) {
-          if (root["gradient"].containsKey("points")) {
-            if (root["gradient"]["points"][light].containsKey("color")) {
-              if (root["gradient"]["points"][light]["color"].containsKey("xy")) {
-                lights[light].x = root["gradient"]["points"][light]["color"]["xy"]["x"];
-                lights[light].y = root["gradient"]["points"][light]["color"]["xy"]["y"];
-                lights[light].colorMode = 1;
-              }
-            }
-          }
-        }
-        if (root.containsKey("xy")) {
+      if (root.containsKey("xy")) {
+        for (uint8_t light = 0; light < lightsCount; light++) {
           lights[light].x = root["xy"][0];
           lights[light].y = root["xy"][1];
-          lights[light].colorMode = 1;
-        } else if (root.containsKey("ct")) {
-          lights[light].ct = root["ct"];
-          lights[light].colorMode = 2;
+        }
+        colorMode = 1;
+      } else if (root.containsKey("ct")) {
+        ct = root["ct"];
+        colorMode = 2;
+      } else {
+        if (root.containsKey("hue")) {
+          hue = root["hue"];
+          colorMode = 3;
+        }
+        if (root.containsKey("sat")) {
+          sat = root["sat"];
+          colorMode = 3;
+        }
+      }
+
+      if (root.containsKey("on")) {
+        if (root["on"]) {
+          lightState = true;
+          togglePower();// restore power
         } else {
-          if (root.containsKey("hue")) {
-            lights[light].hue = root["hue"];
-            lights[light].colorMode = 3;
-          }
-          if (root.containsKey("sat")) {
-            lights[light].sat = root["sat"];
-            lights[light].colorMode = 3;
-          }
+          lightState = false;
         }
+        if (startup == 0) {
+          stateSave = true;
+        }
+      }
 
-        if (root.containsKey("on")) {
-          if (root["on"]) {
-            lights[light].lightState = true;
+      if (root.containsKey("bri")) {
+        bri = root["bri"];
+      }
+
+      if (root.containsKey("bri_inc")) {
+        if (root["bri_inc"] > 0) {
+          if (bri + (int) root["bri_inc"] > 254) {
+            bri = 254;
           } else {
-            lights[light].lightState = false;
+            bri += (int) root["bri_inc"];
           }
-          if (startup == 0) {
-            stateSave = true;
-          }
-        }
-
-        if (root.containsKey("bri")) {
-          lights[light].bri = root["bri"];
-        }
-
-        if (root.containsKey("bri_inc")) {
-          if (root["bri_inc"] > 0) {
-            if (lights[light].bri + (int) root["bri_inc"] > 254) {
-              lights[light].bri = 254;
-            } else {
-              lights[light].bri += (int) root["bri_inc"];
-            }
+        } else {
+          if (bri - (int) root["bri_inc"] < 1) {
+            bri = 1;
           } else {
-            if (lights[light].bri - (int) root["bri_inc"] < 1) {
-              lights[light].bri = 1;
-            } else {
-              lights[light].bri += (int) root["bri_inc"];
-            }
+            bri += (int) root["bri_inc"];
           }
         }
-
-        if (root.containsKey("transitiontime")) {
-          transitiontime = root["transitiontime"];
-        }
-
+      }
+      uint16_t transitiontime = 4;
+      if (root.containsKey("transitiontime")) {
+        transitiontime = root["transitiontime"];
+      }
+      for (uint8_t light = 0; light < lightsCount; light++) {
         if (root.containsKey("alert") && root["alert"] == "select") {
-          if (lights[light].lightState) {
+          if (lightState) {
             lights[light].currentColors[0] = 0; lights[light].currentColors[1] = 0; lights[light].currentColors[2] = 0;
           } else {
             lights[light].currentColors[1] = 126; lights[light].currentColors[2] = 126;
           }
         }
+
         processLightdata(light, transitiontime);
       }
       String output;
@@ -818,19 +780,19 @@ void setup() {
   server.on("/state", HTTP_GET, []() { // HTTP GET request used to fetch current light state
     uint8_t light = 0;
     DynamicJsonDocument root(1024);
-    root["on"] = lights[light].lightState;
-    root["bri"] = lights[light].bri;
+    root["on"] = lightState;
+    root["bri"] = bri;
     JsonArray xy = root.createNestedArray("xy");
-    xy.add(lights[light].x);
-    xy.add(lights[light].y);
-    root["ct"] = lights[light].ct;
-    root["hue"] = lights[light].hue;
-    root["sat"] = lights[light].sat;
-    if (lights[light].colorMode == 1)
+    xy.add(lights[0].x);
+    xy.add(lights[0].y);
+    root["ct"] = ct;
+    root["hue"] = hue;
+    root["sat"] = sat;
+    if (colorMode == 1)
       root["colormode"] = "xy";
-    else if (lights[light].colorMode == 2)
+    else if (colorMode == 2)
       root["colormode"] = "ct";
-    else if (lights[light].colorMode == 3)
+    else if (colorMode == 3)
       root["colormode"] = "hs";
     String output;
     serializeJson(root, output);
