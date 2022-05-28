@@ -17,11 +17,24 @@ IPAddress submask(255, 255, 255,   0);
 #define ENTERTAINMENT_TIMEOUT 1500 // millis
 #define POWER_MOSFET_PIN 13 // WS2812 consume ~1mA/led when off. By installing a MOSFET it will cut the power to the leds when lights ore off.
 
-// Reference, currently set to 3000k white light:
+// Reference:
 // https://andi-siess.de/rgb-to-color-temperature/
+
+// Warm White (3000K)
+// #define WHITE_CT_R 255
+// #define WHITE_CT_G 180
+// #define WHITE_CT_B 107
+
+// Natural White (4300K)
 #define WHITE_CT_R 255
-#define WHITE_CT_G 180
-#define WHITE_CT_B 107
+#define WHITE_CT_G 215
+#define WHITE_CT_B 177
+
+// Cool White (6500K)
+// #define WHITE_CT_R 255
+// #define WHITE_CT_G 249
+// #define WHITE_CT_B 253
+
 
 
 struct state {
