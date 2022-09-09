@@ -285,7 +285,7 @@ RgbColor blending(float left[3], float right[3], uint8_t pixel) { // return RgbC
   uint8_t result[3];
   for (uint8_t i = 0; i < 3; i++) {
     float percent = (float) pixel / (float) (transitionLeds + 1);
-    result[i] = (left[i] * (1.0f - percent) + right[i] * percent) / 2;
+    result[i] = (left[i] * (1.0f - percent) + right[i] * percent);
   }
   return RgbColor((uint8_t)result[0], (uint8_t)result[1], (uint8_t)result[2]);
 }
