@@ -1,6 +1,7 @@
 #include <NeoPixelBus.h>
 #include <EthernetWebServer.h> //https://github.com/khoih-prog/EthernetWebServer
-#include <Ethernet.h>
+//Uncommand Ethernet.h if EthernetWebServer.h > version 2.0.0
+//#include <Ethernet.h>
 #include <SPI.h>
 #include <ArduinoJson.h>
 #include <avr/wdt.h>
