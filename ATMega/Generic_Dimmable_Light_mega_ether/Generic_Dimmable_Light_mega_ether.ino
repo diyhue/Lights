@@ -88,7 +88,7 @@ void lightEngine() {
         if ((step_level[i] > 0.0 && current_bri[i] > bri[i]) || (step_level[i] < 0.0 && current_bri[i] < bri[i])) {
           current_bri[i] = bri[i];
         }
-        analogWrite(pins[i], (int)(current_bri[i]) + 1);
+        analogWrite(pins[i], (int)(current_bri[i]));
 #ifdef DEBUG
         Serial.print(F("current_bri["));
         Serial.print(i);
