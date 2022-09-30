@@ -1,6 +1,7 @@
 #include <NeoPixelBus.h>
 #include <EthernetWebServer.h> //https://github.com/khoih-prog/EthernetWebServer
-#include <Ethernet.h>
+//Uncommand Ethernet.h if EthernetWebServer.h > version 2.0.0
+//#include <Ethernet.h>
 #include "SdFat.h"  //https://github.com/greiman/SdFat
 SdFat SD;
 #define SD_CS_PIN SS
