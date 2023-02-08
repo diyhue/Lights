@@ -1,3 +1,13 @@
+// Creates a single length diyHue Strip Light which can be divided into several sections.
+// Each section will be exposed as a single "light" entity in DIYhue dashboard.
+// Default 3 sections, can be set to less or more. Can be set to 1 section.
+// Each section does NOT have to be same number of pixels.  (section 1 can be 10 pixels, section 2 can be 99 pixeles ect)
+// Changing number of sections will require deleting/adding the light(s) in DIYhue dashboard. super easy!
+//
+// After flashing first time, or after erasing flash, connect to DIY hue wifi Access Point, go to webpage 192.168.4.1 to configure wifi.
+// enter device IP address into browser to configure LED sections, LED pixel count (save & reboot), and set Static IP (save & reboot)
+// then add device to DIYhue dashboard via STATIC IP address.
+
 #include <FS.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
