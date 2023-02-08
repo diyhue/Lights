@@ -1,3 +1,14 @@
+// Creates a single length diyHue Gradient Lightstrip.
+// This Gradient Lightstrip is recognized by Hue Offical App for TV backlighting with 7 segments. (just like offical)
+// demo https://youtu.be/_X9KXNMmL5Q is THIS .ino file
+//
+// After flashing first time, or after erasing flash, connect to DIY hue wifi Access Point, go to webpage 192.168.4.1 to configure wifi.
+// enter device IP address into browser to configure LED sections, LED pixel count (save & reboot), and set Static IP (save & reboot)
+// then add device to DIYhue dashboard via new static IP address.
+// Add DIYhue "hub" to Hue Official App,  setup Entertainment Zone to pair light to TV/Monitor 
+// for use with Hue Sync Box, Hue Essentials Android/AndroidTV app, or Hue Sync PC app.
+
+
 #include <LittleFS.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
