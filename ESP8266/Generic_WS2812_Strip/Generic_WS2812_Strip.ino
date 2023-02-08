@@ -1,4 +1,4 @@
-// Creates a single length diyHue Strip Light, that can be divided into several sections.
+// Creates a single length diyHue Strip Light which can be divided into several sections.
 // Each section will be exposed as a single "light" entity in DIYhue dashboard.
 // Default 3 sections, can be set to less or more. Can be set to 1 section.
 // Each section does NOT have to be same number of pixels.  (section 1 can be 10 pixels, section 2 can be 99 pixeles ect)
