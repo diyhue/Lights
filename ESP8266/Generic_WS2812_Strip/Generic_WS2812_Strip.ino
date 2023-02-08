@@ -1,5 +1,6 @@
 // Creates a single length diyHue Strip Light, that can be divided into several sections.
 // Each section will be exposed as a single "light" entity in DIYhue dashboard.
+// Each section does NOT have to be same number of pixels.  (section 1 can be 10 pixels, section 2 can be 99 pixeles ect)
 // Changing number of sections will require deleting/adding the light(s) in DIYhue dashboard. super easy!
 //
 // After flashing first time, or after erasing flash, connect to DIY hue wifi Access Point, go to webpage 192.168.4.1 to configure wifi.
