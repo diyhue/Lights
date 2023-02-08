@@ -6,7 +6,7 @@
 //
 // After flashing first time, or after erasing flash, connect to DIY hue wifi Access Point, go to webpage 192.168.4.1 to configure wifi.
 // enter device IP address into browser to configure LED sections, LED pixel count (save & reboot), and set Static IP (save & reboot)
-// then add device to DIYhue dashboard via new static IP address.
+// then add device to DIYhue dashboard via STATIC IP address.
 
 #include <FS.h>
 #include <ESP8266WiFi.h>
