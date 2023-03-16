@@ -49,14 +49,14 @@
    },
    "gradient-lightstrip":{
      "version":4.0,
-     "filname": "Hue_Gradient_Lightstrip.bin"
+     "filename": "Hue_Gradient_Lightstrip.bin"
    },
    "signe-gradient":{
      "version":4.0,
-     "filname": "Hue_Signe_Gradient.bin"
+     "filename": "Hue_Signe_Gradient.bin"
    },
    "lumos-gradient":{
      "version":1.0,
-     "filname": "lumos-gradient.bin"
+     "filename": "lumos-gradient.bin"
    }
 }
