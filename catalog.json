@@ -55,8 +55,8 @@
      "version":4.0,
      "filename": "Hue_Signe_Gradient.bin"
    },
-   "lumos-gradient":{
+   "luma-gradient":{
      "version":1.0,
-     "filename": "lumos-gradient.bin"
+     "filename": "luma-gradient.bin"
    }
 }
