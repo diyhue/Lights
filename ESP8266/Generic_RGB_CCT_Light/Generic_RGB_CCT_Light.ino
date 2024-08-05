@@ -37,6 +37,7 @@ unsigned long lastEPMillis;
 char *lightName = "New Hue RGB-CCT light";
 uint8_t scene = 0, startup = false, onPin = 1, offPin = 3, pins[] = {12, 13, 14, 4, 5}; //red, green, blue, could white, warm white
 bool hwSwitch = false;
+uint8_t rgb_multiplier[] = {100, 100, 100}; // light multiplier in percentage /R, G, B/
 
 ESP8266WebServer server(80);
 WiFiUDP Udp;
@@ -123,15 +124,34 @@ void convert_xy()
   g = g <= 0.0031308f ? 12.92f * g : (1.0f + 0.055f) * pow(g, (1.0f / 2.4f)) - 0.055f;
   b = b <= 0.0031308f ? 12.92f * b : (1.0f + 0.055f) * pow(b, (1.0f / 2.4f)) - 0.055f;
 
-  float maxv = 0;// calc the maximum value of r g and b
-  if (r > maxv) maxv = r;
-  if (g > maxv) maxv = g;
-  if (b > maxv) maxv = b;
+  // Apply multiplier for white correction
+  r = r * rgb_multiplier[0] / 100;
+  g = g * rgb_multiplier[1] / 100;
+  b = b * rgb_multiplier[2] / 100;
 
-  if (maxv > 0) {// only if maximum value is greater than zero, otherwise there would be division by zero
-    r /= maxv;   // scale to maximum so the brightest light is always 1.0
-    g /= maxv;
-    b /= maxv;
+  if (r > b && r > g) {
+    // red is biggest
+    if (r > 1.0f) {
+      g = g / r;
+      b = b / r;
+      r = 1.0f;
+    }
+  }
+  else if (g > b && g > r) {
+    // green is biggest
+    if (g > 1.0f) {
+      r = r / g;
+      b = b / g;
+      g = 1.0f;
+    }
+  }
+  else if (b > r && b > g) {
+    // blue is biggest
+    if (b > 1.0f) {
+      r = r / b;
+      g = g / b;
+      b = 1.0f;
+    }
   }
 
   r = r < 0 ? 0 : r;
@@ -333,6 +353,9 @@ bool saveConfig() {
   json["off"] = offPin;
   json["hw"] = hwSwitch;
   json["dhcp"] = useDhcp;
+  json["rpct"] = rgb_multiplier[0];
+  json["gpct"] = rgb_multiplier[1];
+  json["bpct"] = rgb_multiplier[2];
   JsonArray addr = json.createNestedArray("addr");
   addr.add(address[0]);
   addr.add(address[1]);
@@ -385,6 +408,11 @@ bool loadConfig() {
   pins[2] = (uint8_t) json["b"];
   pins[3] = (uint8_t) json["c"];
   pins[4] = (uint8_t) json["w"];
+  if (json.containsKey("rpct")) {
+    rgb_multiplier[0] = (uint8_t) json["rpct"];
+    rgb_multiplier[1] = (uint8_t) json["gpct"];
+    rgb_multiplier[2] = (uint8_t) json["bpct"];
+  }
   onPin = (uint8_t) json["on"];
   offPin = (uint8_t) json["off"];
   hwSwitch = json["hw"];
@@ -411,8 +439,8 @@ void handleNotFound() {
 }
 
 void setup() {
-  //Serial.begin(9600);
-  //Serial.println();
+  Serial.begin(74880);
+  Serial.println();
   delay(1000);
 
   //Serial.println("mounting FS...");
@@ -598,6 +626,9 @@ void setup() {
     root["blue"] = pins[2];
     root["cw"] = pins[3];
     root["ww"] = pins[4];
+    root["rpct"] = rgb_multiplier[0];
+    root["gpct"] = rgb_multiplier[1];
+    root["bpct"] = rgb_multiplier[2];
     root["hw"] = hwSwitch;
     root["on"] = onPin;
     root["off"] = offPin;
@@ -621,6 +652,9 @@ void setup() {
       pins[2] = server.arg("blue").toInt();
       pins[3] = server.arg("cw").toInt();
       pins[4] = server.arg("ww").toInt();
+      rgb_multiplier[0] = server.arg("rpct").toInt();
+      rgb_multiplier[1] = server.arg("gpct").toInt();
+      rgb_multiplier[2] = server.arg("bpct").toInt();
       hwSwitch = server.arg("hwswitch").toInt();
       onPin = server.arg("on").toInt();
       offPin = server.arg("off").toInt();
@@ -633,7 +667,7 @@ void setup() {
       saveConfig();
     }
 
-    const char * htmlContent = "<!DOCTYPE html><html> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <title>Hue Light</title> <link rel=\"stylesheet\" href=\"https://diyhue.org/cdn/bootstrap.min.css\"> <link rel=\"stylesheet\" href=\"https://diyhue.org/cdn/ion.rangeSlider.min.css\"/> <script src=\"https://diyhue.org/cdn/jquery-3.3.1.min.js\"></script> <script src=\"https://diyhue.org/cdn/bootstrap.min.js\"></script> <script src=\"https://diyhue.org/cdn/ion.rangeSlider.min.js\"></script> </head> <body> <nav class=\"navbar navbar-expand-lg navbar-light bg-light rounded\"> <button class=\"navbar-toggler\" type=\"button\" data-toggle=\"collapse\" data-target=\"#navbarToggler\" aria-controls=\"navbarToggler\" aria-expanded=\"false\" aria-label=\"Toggle navigation\"> <span class=\"navbar-toggler-icon\"></span> </button> <h2></h2> <div class=\"collapse navbar-collapse justify-content-md-center\" id=\"navbarToggler\"> <ul class=\"nav nav-pills\"> <li class=\"nav-item\"> <a class=\"nav-link active\" data-toggle=\"pill\" href=\"#home\">Home</a> </li><li class=\"nav-item\"> <a class=\"nav-link\" data-toggle=\"pill\" href=\"#menu1\">Settings</a> </li><li class=\"nav-item\"> <a class=\"nav-link\" data-toggle=\"pill\" href=\"#menu2\">Network</a> </li><li class=\"nav-item\"> <a class=\"nav-link\" data-toggle=\"pill\" href=\"#\" disabled> </a> </li><li class=\"nav-item\"> <a class=\"nav-link\" data-toggle=\"pill\" href=\"#\" disabled> </a> </li></ul> </div></nav> <div class=\"tab-content\"> <div class=\"tab-pane container active\" id=\"home\"> <br><br><form> <div class=\"form-group row\"> <label for=\"power\" class=\"col-sm-2 col-form-label\">Power</label> <div class=\"col-sm-10\"> <div id=\"power\" class=\"btn-group\" role=\"group\"> <button type=\"button\" class=\"btn btn-default border\" id=\"power-on\">On</button> <button type=\"button\" class=\"btn btn-default border\" id=\"power-off\">Off</button> </div></div></div><div class=\"form-group row\"> <label for=\"bri\" class=\"col-sm-2 col-form-label\">Brightness</label> <div class=\"col-sm-10\"> <input type=\"text\" id=\"bri\" class=\"js-range-slider\" name=\"bri\" value=\"\"/> </div></div><div class=\"form-group row\"> <label for=\"hue\" class=\"col-sm-2 col-form-label\">Color</label> <div class=\"col-sm-10\"> <canvas id=\"hue\" width=\"320px\" height=\"320px\" style=\"border:1px solid #d3d3d3;\"></canvas> </div></div><div class=\"form-group row\"> <label for=\"color\" class=\"col-sm-2 col-form-label\">Color Temp</label> <div class=\"col-sm-10\"> <canvas id=\"ct\" width=\"320px\" height=\"50px\" style=\"border:1px solid #d3d3d3;\"></canvas> </div></div></form> </div><div class=\"tab-pane container fade\" id=\"menu1\"> <br><form method=\"POST\" action=\"/\"> <div class=\"form-group row\"> <label for=\"name\" class=\"col-sm-2 col-form-label\">Light Name</label> <div class=\"col-sm-6\"> <input type=\"text\" class=\"form-control\" id=\"name\" name=\"name\"> </div></div><div class=\"form-group row\"> <label class=\"control-label col-sm-2\" for=\"startup\">Default Power:</label> <div class=\"col-sm-4\"> <select class=\"form-control\" name=\"startup\" id=\"startup\"> <option value=\"0\">Last State</option> <option value=\"1\">On</option> <option value=\"2\">Off</option> </select> </div></div><div class=\"form-group row\"> <label class=\"control-label col-sm-2\" for=\"scene\">Default Scene:</label> <div class=\"col-sm-4\"> <select class=\"form-control\" name=\"scene\" id=\"scene\"> < <option value=\"0\">Relax</option> <option value=\"1\">Read</option> <option value=\"2\">Concentrate</option> <option value=\"3\">Energize</option> <option value=\"4\">Bright</option> <option value=\"5\">Dimmed</option> <option value=\"6\">Nightlight</option> <option value=\"7\">Savanna sunset</option> <option value=\"8\">Tropical twilight</option> <option value=\"9\">Arctic aurora</option> <option value=\"10\">Spring blossom</option> </select> </div></div><div class=\"form-group row\"> <label for=\"red\" class=\"col-sm-2 col-form-label\">Red Pin</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"red\" name=\"red\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label for=\"green\" class=\"col-sm-2 col-form-label\">Green Pin</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"green\" name=\"green\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label for=\"blue\" class=\"col-sm-2 col-form-label\">Blue Pin</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"blue\" name=\"blue\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label for=\"ww\" class=\"col-sm-2 col-form-label\">Warm W Pin</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"ww\" name=\"ww\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label for=\"cw\" class=\"col-sm-2 col-form-label\">Cold W Pin</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"cw\" name=\"cw\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label class=\"control-label col-sm-2\" for=\"hwswitch\">HW Switch:</label> <div class=\"col-sm-2\"> <select class=\"form-control\" name=\"hwswitch\" id=\"hwswitch\"> <option value=\"1\">Yes</option> <option value=\"0\">No</option> </select> </div></div><div class=\"form-group row\"> <label for=\"on\" class=\"col-sm-2 col-form-label\">On Pin</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"on\" name=\"on\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label for=\"off\" class=\"col-sm-2 col-form-label\">Off Pin</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"off\" name=\"off\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <div class=\"col-sm-10\"> <button type=\"submit\" class=\"btn btn-primary\">Save</button> </div></div></form> </div><div class=\"tab-pane container fade\" id=\"menu2\"> <br><form method=\"POST\" action=\"/\"> <div class=\"form-group row\"> <label class=\"control-label col-sm-2\" for=\"dhcp\">DHCP:</label> <div class=\"col-sm-3\"> <select class=\"form-control\" name=\"dhcp\" id=\"dhcp\"> <option value=\"1\">On</option> <option value=\"0\">Off</option> </select> </div></div><div class=\"form-group row\"> <label for=\"addr\" class=\"col-sm-2 col-form-label\">Ip</label> <div class=\"col-sm-4\"> <input type=\"text\" class=\"form-control\" id=\"addr\" name=\"addr\"> </div></div><div class=\"form-group row\"> <label for=\"sm\" class=\"col-sm-2 col-form-label\">Submask</label> <div class=\"col-sm-4\"> <input type=\"text\" class=\"form-control\" id=\"sm\" name=\"sm\"> </div></div><div class=\"form-group row\"> <label for=\"gw\" class=\"col-sm-2 col-form-label\">Gateway</label> <div class=\"col-sm-4\"> <input type=\"text\" class=\"form-control\" id=\"gw\" name=\"gw\"> </div></div><div class=\"form-group row\"> <div class=\"col-sm-10\"> <button type=\"submit\" class=\"btn btn-primary\">Save</button> </div></div></form> </div></div><script src=\"https://diyhue.org/cdn/color.min.js\"></script> </body></html>";
+    const char * htmlContent = "<!DOCTYPE html><html> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <title>Hue Light</title> <link rel=\"stylesheet\" href=\"https://diyhue.org/cdn/bootstrap.min.css\"> <link rel=\"stylesheet\" href=\"https://diyhue.org/cdn/ion.rangeSlider.min.css\"/> <script src=\"https://diyhue.org/cdn/jquery-3.3.1.min.js\"></script> <script src=\"https://diyhue.org/cdn/bootstrap.min.js\"></script> <script src=\"https://diyhue.org/cdn/ion.rangeSlider.min.js\"></script> </head> <body> <nav class=\"navbar navbar-expand-lg navbar-light bg-light rounded\"> <button class=\"navbar-toggler\" type=\"button\" data-toggle=\"collapse\" data-target=\"#navbarToggler\" aria-controls=\"navbarToggler\" aria-expanded=\"false\" aria-label=\"Toggle navigation\"> <span class=\"navbar-toggler-icon\"></span> </button> <h2></h2> <div class=\"collapse navbar-collapse justify-content-md-center\" id=\"navbarToggler\"> <ul class=\"nav nav-pills\"> <li class=\"nav-item\"> <a class=\"nav-link active\" data-toggle=\"pill\" href=\"#home\">Home</a> </li><li class=\"nav-item\"> <a class=\"nav-link\" data-toggle=\"pill\" href=\"#menu1\">Settings</a> </li><li class=\"nav-item\"> <a class=\"nav-link\" data-toggle=\"pill\" href=\"#menu2\">Network</a> </li><li class=\"nav-item\"> <a class=\"nav-link\" data-toggle=\"pill\" href=\"#\" disabled> </a> </li><li class=\"nav-item\"> <a class=\"nav-link\" data-toggle=\"pill\" href=\"#\" disabled> </a> </li></ul> </div></nav> <div class=\"tab-content\"> <div class=\"tab-pane container active\" id=\"home\"> <br><br><form> <div class=\"form-group row\"> <label for=\"power\" class=\"col-sm-2 col-form-label\">Power</label> <div class=\"col-sm-10\"> <div id=\"power\" class=\"btn-group\" role=\"group\"> <button type=\"button\" class=\"btn btn-default border\" id=\"power-on\">On</button> <button type=\"button\" class=\"btn btn-default border\" id=\"power-off\">Off</button> </div></div></div><div class=\"form-group row\"> <label for=\"bri\" class=\"col-sm-2 col-form-label\">Brightness</label> <div class=\"col-sm-10\"> <input type=\"text\" id=\"bri\" class=\"js-range-slider\" name=\"bri\" value=\"\"/> </div></div><div class=\"form-group row\"> <label for=\"hue\" class=\"col-sm-2 col-form-label\">Color</label> <div class=\"col-sm-10\"> <canvas id=\"hue\" width=\"320px\" height=\"320px\" style=\"border:1px solid #d3d3d3;\"></canvas> </div></div><div class=\"form-group row\"> <label for=\"color\" class=\"col-sm-2 col-form-label\">Color Temp</label> <div class=\"col-sm-10\"> <canvas id=\"ct\" width=\"320px\" height=\"50px\" style=\"border:1px solid #d3d3d3;\"></canvas> </div></div></form> </div><div class=\"tab-pane container fade\" id=\"menu1\"> <br><form method=\"POST\" action=\"/\"> <div class=\"form-group row\"> <label for=\"name\" class=\"col-sm-2 col-form-label\">Light Name</label> <div class=\"col-sm-6\"> <input type=\"text\" class=\"form-control\" id=\"name\" name=\"name\"> </div></div><div class=\"form-group row\"> <label class=\"control-label col-sm-2\" for=\"startup\">Default Power:</label> <div class=\"col-sm-4\"> <select class=\"form-control\" name=\"startup\" id=\"startup\"> <option value=\"0\">Last State</option> <option value=\"1\">On</option> <option value=\"2\">Off</option> </select> </div></div><div class=\"form-group row\"> <label class=\"control-label col-sm-2\" for=\"scene\">Default Scene:</label> <div class=\"col-sm-4\"> <select class=\"form-control\" name=\"scene\" id=\"scene\"> < <option value=\"0\">Relax</option> <option value=\"1\">Read</option> <option value=\"2\">Concentrate</option> <option value=\"3\">Energize</option> <option value=\"4\">Bright</option> <option value=\"5\">Dimmed</option> <option value=\"6\">Nightlight</option> <option value=\"7\">Savanna sunset</option> <option value=\"8\">Tropical twilight</option> <option value=\"9\">Arctic aurora</option> <option value=\"10\">Spring blossom</option> </select> </div></div><div class=\"form-group row\"> <label for=\"rpct\" class=\"col-sm-2 col-form-label\">Red multiplier</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"rpct\" name=\"rpct\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label for=\"gpct\" class=\"col-sm-2 col-form-label\">Green multiplier</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"gpct\" name=\"gpct\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label for=\"bpct\" class=\"col-sm-2 col-form-label\">Blue multiplier</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"bpct\" name=\"bpct\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label for=\"red\" class=\"col-sm-2 col-form-label\">Red Pin</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"red\" name=\"red\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label for=\"green\" class=\"col-sm-2 col-form-label\">Green Pin</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"green\" name=\"green\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label for=\"blue\" class=\"col-sm-2 col-form-label\">Blue Pin</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"blue\" name=\"blue\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label for=\"ww\" class=\"col-sm-2 col-form-label\">Warm W Pin</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"ww\" name=\"ww\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label for=\"cw\" class=\"col-sm-2 col-form-label\">Cold W Pin</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"cw\" name=\"cw\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label class=\"control-label col-sm-2\" for=\"hwswitch\">HW Switch:</label> <div class=\"col-sm-2\"> <select class=\"form-control\" name=\"hwswitch\" id=\"hwswitch\"> <option value=\"1\">Yes</option> <option value=\"0\">No</option> </select> </div></div><div class=\"form-group row\"> <label for=\"on\" class=\"col-sm-2 col-form-label\">On Pin</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"on\" name=\"on\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <label for=\"off\" class=\"col-sm-2 col-form-label\">Off Pin</label> <div class=\"col-sm-3\"> <input type=\"number\" class=\"form-control\" id=\"off\" name=\"off\" placeholder=\"\"> </div></div><div class=\"form-group row\"> <div class=\"col-sm-10\"> <button type=\"submit\" class=\"btn btn-primary\">Save</button> </div></div></form> </div><div class=\"tab-pane container fade\" id=\"menu2\"> <br><form method=\"POST\" action=\"/\"> <div class=\"form-group row\"> <label class=\"control-label col-sm-2\" for=\"dhcp\">DHCP:</label> <div class=\"col-sm-3\"> <select class=\"form-control\" name=\"dhcp\" id=\"dhcp\"> <option value=\"1\">On</option> <option value=\"0\">Off</option> </select> </div></div><div class=\"form-group row\"> <label for=\"addr\" class=\"col-sm-2 col-form-label\">Ip</label> <div class=\"col-sm-4\"> <input type=\"text\" class=\"form-control\" id=\"addr\" name=\"addr\"> </div></div><div class=\"form-group row\"> <label for=\"sm\" class=\"col-sm-2 col-form-label\">Submask</label> <div class=\"col-sm-4\"> <input type=\"text\" class=\"form-control\" id=\"sm\" name=\"sm\"> </div></div><div class=\"form-group row\"> <label for=\"gw\" class=\"col-sm-2 col-form-label\">Gateway</label> <div class=\"col-sm-4\"> <input type=\"text\" class=\"form-control\" id=\"gw\" name=\"gw\"> </div></div><div class=\"form-group row\"> <div class=\"col-sm-10\"> <button type=\"submit\" class=\"btn btn-primary\">Save</button> </div></div></form> </div></div><script src=\"https://diyhue.org/cdn/color.min.js\"></script> </body></html>";
     server.send(200, "text/html", htmlContent);
     if (server.args()) {
       delay(100);
@@ -667,7 +701,7 @@ void entertainment() {
     Udp.read(packetBuffer, packetSize);
     for (uint8_t color = 0; color < 3; color++) {
       light.currentColors[color] = packetBuffer[color + 1];
-      analogWrite(pins[color], (int)(packetBuffer[color + 1] * 4));
+      analogWrite(pins[color], (int)(packetBuffer[color + 1] * 4 * (rgb_multiplier[color] / 100)));
     }
   }
 }
