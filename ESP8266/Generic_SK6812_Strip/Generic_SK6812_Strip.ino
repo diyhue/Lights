@@ -34,6 +34,7 @@ unsigned long lastEPMillis;
 char *lightName = "Hue SK6812 strip";
 uint8_t scene, startup, onPin = 4, offPin = 5;
 bool hwSwitch = false;
+uint8_t rgb_multiplier[] = {100, 100, 100}; // light multiplier in percentage /R, G, B/
 
 uint8_t lightsCount = 3;
 
@@ -139,6 +140,11 @@ void convertXy(uint8_t light)
   g = g <= 0.04045f ? g / 12.92f : pow((g + 0.055f) / (1.0f + 0.055f), 2.4f);
   b = b <= 0.04045f ? b / 12.92f : pow((b + 0.055f) / (1.0f + 0.055f), 2.4f);
 
+  // Apply multiplier for white correction
+  r = r * rgb_multiplier[0] / 100;
+  g = g * rgb_multiplier[1] / 100;
+  b = b * rgb_multiplier[2] / 100;
+
   float maxv = 0;// calc the maximum value of r g and b
   if (r > maxv) maxv = r;
   if (g > maxv) maxv = g;
@@ -173,6 +179,12 @@ void convertCt(uint8_t light) {
   r = r > 255 ? 255 : r;
   g = g > 255 ? 255 : g;
   b = b > 255 ? 255 : b;
+
+  // Apply multiplier for white correction
+  r = r * rgb_multiplier[0] / 100;
+  g = g * rgb_multiplier[1] / 100;
+  b = b * rgb_multiplier[2] / 100;
+
   lights[light].colors[0] = r * (lights[light].bri / 255.0f); lights[light].colors[1] = g * (lights[light].bri / 255.0f); lights[light].colors[2] = b * (lights[light].bri / 255.0f);
 }
 
@@ -496,6 +508,9 @@ bool saveConfig() {
   }
   json["pixelCount"] = pixelCount;
   json["transLeds"] = transitionLeds;
+  json["rpct"] = rgb_multiplier[0];
+  json["gpct"] = rgb_multiplier[1];
+  json["bpct"] = rgb_multiplier[2];
   JsonArray addr = json.createNestedArray("addr");
   addr.add(address[0]);
   addr.add(address[1]);
@@ -547,11 +562,16 @@ bool loadConfig() {
   offPin = (uint8_t) json["off"];
   hwSwitch = json["hw"];
   lightsCount = (uint16_t) json["lightsCount"];
-   for (uint16_t i = 0; i < lightsCount; i++) {
+  for (uint16_t i = 0; i < lightsCount; i++) {
     dividedLightsArray[i] = (uint16_t) json["dividedLight_" + String(i)];
   }
   pixelCount = (uint16_t) json["pixelCount"];
   transitionLeds = (uint8_t) json["transLeds"];
+  if (json.containsKey("rpct")) {
+    rgb_multiplier[0] = (uint8_t) json["rpct"];
+    rgb_multiplier[1] = (uint8_t) json["gpct"];
+    rgb_multiplier[2] = (uint8_t) json["bpct"];
+  }
   useDhcp = json["dhcp"];
   address = {json["addr"][0], json["addr"][1], json["addr"][2], json["addr"][3]};
   submask = {json["mask"][0], json["mask"][1], json["mask"][2], json["mask"][3]};
@@ -773,11 +793,14 @@ void setup() {
     root["off"] = offPin;
     root["hwswitch"] = (int)hwSwitch;
     root["lightscount"] = lightsCount;
-      for (uint8_t i = 0; i < lightsCount; i++) {
+    for (uint8_t i = 0; i < lightsCount; i++) {
       root["dividedLight_" + String(i)] = (int)dividedLightsArray[i];
     }
     root["pixelcount"] = pixelCount;
     root["transitionleds"] = transitionLeds;
+    root["rpct"] = rgb_multiplier[0];
+    root["gpct"] = rgb_multiplier[1];
+    root["bpct"] = rgb_multiplier[2];
     root["dhcp"] = (int)useDhcp;
     root["addr"] = (String)address[0] + "." + (String)address[1] + "." + (String)address[2] + "." + (String)address[3];
     root["gw"] = (String)gateway[0] + "." + (String)gateway[1] + "." + (String)gateway[2] + "." + (String)gateway[3];
@@ -795,6 +818,9 @@ void setup() {
       lightsCount = server.arg("lightscount").toInt();
       pixelCount = server.arg("pixelcount").toInt();
       transitionLeds = server.arg("transitionleds").toInt();
+      rgb_multiplier[0] = server.arg("rpct").toInt();
+      rgb_multiplier[1] = server.arg("gpct").toInt();
+      rgb_multiplier[2] = server.arg("bpct").toInt();
       for (uint16_t i = 0; i < lightsCount; i++) {
         dividedLightsArray[i] = server.arg("dividedLight_" + String(i)).toInt();
       }
@@ -849,9 +875,9 @@ void entertainment() {
     lastEPMillis = millis();
     Udp.read(packetBuffer, packetSize);
     for (uint8_t i = 0; i < packetSize / 4; i++) {
-      lights[packetBuffer[i * 4]].currentColors[0] = packetBuffer[i * 4 + 1];
-      lights[packetBuffer[i * 4]].currentColors[1] = packetBuffer[i * 4 + 2];
-      lights[packetBuffer[i * 4]].currentColors[2] = packetBuffer[i * 4 + 3];
+      lights[packetBuffer[i * 4]].currentColors[0] = packetBuffer[i * 4 + 1] * rgb_multiplier[0] / 100;
+      lights[packetBuffer[i * 4]].currentColors[1] = packetBuffer[i * 4 + 2] * rgb_multiplier[1] / 100;
+      lights[packetBuffer[i * 4]].currentColors[2] = packetBuffer[i * 4 + 3] * rgb_multiplier[2] / 100;
     }
     for (uint8_t light = 0; light < lightsCount; light++) { 
       if (lightsCount > 1) {
