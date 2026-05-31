@@ -1,3 +1,0 @@
-[submodule "Arduino/WLED"]
-	path = Arduino/WLED
-	url = https://github.com/juanesf/WLED
